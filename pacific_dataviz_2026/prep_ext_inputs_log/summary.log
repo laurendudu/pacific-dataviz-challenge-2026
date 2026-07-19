@@ -1,0 +1,23 @@
+[prepare_external_inputs] Summary:
+  Output folder:
+  /Users/laurendurivault/Documents/GitHub/laurendudu/pacific-dataviz-challenge-2026/pacific_dataviz_2026
+  Output folders:
+  logs: summary log.
+
+  Phase A: LCA:
+    ext_lca:
+      Input folder:
+      /Users/laurendurivault/Documents/GitHub/laurendudu/pacific-dataviz-challenge-2026/pacific_dataviz_2026/A_lca/ext_lca
+      Output folders:
+      templates: external LCA README guidance.
+      deterministic: deterministic external LCA examples.
+      monte_carlo: Monte Carlo external LCA examples.
+
+  Phase B.1: aSoCC:
+    ext_asocc:
+      Input folder:
+      /Users/laurendurivault/Documents/GitHub/laurendudu/pacific-dataviz-challenge-2026/pacific_dataviz_2026/B1_asocc/ext_asocc
+      Output folders:
+      templates: external aSoCC README guidance.
+      deterministic: deterministic external aSoCC examples.
+      monte_carlo: Monte Carlo external aSoCC examples.
