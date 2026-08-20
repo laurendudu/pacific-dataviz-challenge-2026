@@ -25,11 +25,26 @@ LCA_FILE = (
     / f"{LCA_VERSION}__{LCIA_METHOD}.csv"
 )
 
+# L1.b = production-based accounting (PBA): total output produced in region
+# r_p, regardless of where it is consumed. Our emissions data is territorial
+# (where it physically happens), so this is the honest FU — L1.a is labelled
+# consumption-based (CBA) in pyaesa's docs and would misdescribe the data.
+# The selector column pyaesa expects in the LCA CSV changes to match: r_p,
+# not r_f.
+FU_CODE = "L1.b"
+REGION_COL = "r_p"
+
+# Remaining IPCC AR6 carbon budget for <1.5C with no/limited overshoot (C1),
+# rather than a fixed annual planetary-boundary allocation. The budget
+# shrinks as the world emits, which is what "fair share of the carbon
+# budget" means in climate policy — and C1 is the 1.5C pathway Pacific
+# nations themselves campaign for ("1.5 to stay alive").
+CC_CATEGORY = ["C1"]
+
 # ASR results, written by pyaesa under the equal-per-capita allocation.
-ASR_FILE = (
-    ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
-    / f"static_{LCIA_METHOD}" / "results" / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
-)
+# The exact folder name pyaesa derives from cc_type/category is not
+# predictable in advance — notebook 03 globs for it after running and
+# reports the path it found.
 
 # Reference tables pyaesa downloads and processes in notebook 01.
 WB_POP = ROOT / "data_processed" / "pop_gdp" / "wb_processed.csv"

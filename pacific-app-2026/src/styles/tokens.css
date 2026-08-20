@@ -1,0 +1,77 @@
+/* ── Design tokens ───────────────────────────────────────────────────────────
+   Dark-committed editorial piece: deep-ocean surface, one mode.
+   Series slots are the validated categorical order, dark steps.
+   Verified with the dataviz validator against surface #0c1720:
+   lightness band PASS · chroma floor PASS · CVD sep PASS (worst adj ΔE 8.4)
+   · normal-vision floor PASS (19.3) · contrast vs surface PASS (all ≥3:1)
+   Re-run the validator before changing any --series-* or --surface-* value.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* Light shell — the globe sequence is on white */
+  --paper: #ffffff;
+  --ink: #12171c;
+  --ink-secondary: #47535e;
+  --ink-muted: #7c8894;
+  --hairline: #e3e7ea;
+
+  /* Surfaces */
+  --surface-0: #08111a;   /* page ground, deepest */
+  --surface-1: #0c1720;   /* chart surface — the validated one */
+  --surface-2: #12212c;   /* raised: step cards, tooltips */
+  --surface-3: #1b2f3c;   /* hairlines, wells */
+
+  /* Ink */
+  --text-primary:   #f2f6f7;
+  --text-secondary: #a9bcc4;
+  --text-muted:     #6f858f;
+
+  /* Categorical series — fixed order, never cycled */
+  --series-1: #3987e5;  /* blue    */
+  --series-2: #d95926;  /* orange  */
+  --series-3: #199e70;  /* aqua    */
+  --series-4: #c98500;  /* yellow  */
+  --series-5: #d55181;  /* magenta */
+  --series-6: #008300;  /* green   */
+  --series-7: #9085e9;  /* violet  */
+  --series-8: #e66767;  /* red     */
+
+  /* Status — reserved, never reused as a series */
+  --status-good:     #0ca30c;
+  --status-warning:  #fab219;
+  --status-serious:  #ec835a;
+  --status-critical: #d03b3b;
+
+  /* Semantic roles for this story */
+  --safe:      var(--status-good);      /* within planetary boundary / ASR < 1 */
+  --breached:  var(--status-critical);  /* boundary transgressed / ASR > 1     */
+  --pacific:   var(--series-3);         /* Pacific nations                     */
+  --emitter:   var(--series-2);         /* high-ASR economies                  */
+
+  /* Chart furniture — recessive by rule */
+  --grid-line: #1b2f3c;
+  --axis-line: #2a4453;
+
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --step--1: clamp(0.78rem, 0.75rem + 0.15vw, 0.86rem);
+  --step-0:  clamp(1rem, 0.95rem + 0.25vw, 1.13rem);
+  --step-1:  clamp(1.33rem, 1.2rem + 0.6vw, 1.7rem);
+  --step-2:  clamp(1.8rem, 1.5rem + 1.4vw, 2.9rem);
+  --step-3:  clamp(2.4rem, 1.8rem + 3vw, 5rem);
+
+  /* Space */
+  --space-xs: 0.5rem;
+  --space-s:  1rem;
+  --space-m:  1.75rem;
+  --space-l:  3rem;
+  --space-xl: 6rem;
+
+  --measure: 34rem;
+  --radius: 4px;
+}
