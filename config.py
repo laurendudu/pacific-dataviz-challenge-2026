@@ -41,10 +41,20 @@ REGION_COL = "r_p"
 # nations themselves campaign for ("1.5 to stay alive").
 CC_CATEGORY = ["C1"]
 
+# C1 covers 12 AR6 model/policy runs, not one number. We report a single
+# reference run rather than a median across scenarios pyaesa cannot label:
+# MESSAGEix-GLOBIOM's "National Policies Implemented (2020)" pathway
+# targeting ~500 ppm CO2-eq — the middle of the three core 450/500/600
+# targets in that model family, and not one of the COVID-response variants
+# (COV_GreenPush, COV_Restore...) that make up the other half of C1.
+CC_SCENARIO = "EN_NPi2020_500"
+
 # ASR results, written by pyaesa under the equal-per-capita allocation.
-# The exact folder name pyaesa derives from cc_type/category is not
-# predictable in advance — notebook 03 globs for it after running and
-# reports the path it found.
+ASR_FILE = (
+    ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
+    / f"dynamic_ar6_{LCIA_METHOD}" / "results"
+    / f"l1_EG(Pop)__{LCIA_METHOD}_dynamic_ar6.csv"
+)
 
 # Reference tables pyaesa downloads and processes in notebook 01.
 WB_POP = ROOT / "data_processed" / "pop_gdp" / "wb_processed.csv"
