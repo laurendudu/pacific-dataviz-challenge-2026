@@ -1,32 +1,34 @@
-import { useMemo, useRef } from 'react'
-import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from 'd3-geo'
-import { scaleLinear } from 'd3-scale'
-import { interpolateLab, interpolateNumber } from 'd3-interpolate'
+import { useMemo, useRef, useEffect } from 'react'
+import { useSpring } from 'motion/react'
+import { geoOrthographic, geoPath, geoCentroid } from 'd3-geo'
+import { scaleThreshold } from 'd3-scale'
+import { interpolateNumber } from 'd3-interpolate'
 import { feature } from 'topojson-client'
-import worldCoarse from 'world-atlas/countries-110m.json'
-import worldFine from 'world-atlas/countries-50m.json'
+import world110 from 'world-atlas/countries-110m.json'
+import pacificIslands from '../data/pacificIslands.json'
 import { Scene } from '../components/scroll/Scene'
 import { EarthGL } from './EarthGL'
 import { useChartDimensions } from '../components/chart/useChartDimensions'
-import { slice, easeOut, easeInOut } from '../hooks/useScrollProgress'
-import { carbonFootprint, FOOTPRINT_DOMAIN } from '../data/carbonDummy'
+import { slice, easeOut, easeInOutSmooth } from '../hooks/useScrollProgress'
+import { useEmissionShares, SHARE_YEAR } from '../data/emissionShares'
 
 /* ── choreography ─────────────────────────────────────────────────────────
-   Idle spin until the first scroll, then scroll owns the rotation:
+   Almost no extra spinning on scroll — idle spin only, then a single
+   shortest-path turn onto the Pacific while zooming.
 
-     leg 1  (0 → 0.20)   photograph, half a spin, morph to red/white
-     leg 2  (0.20 → 0.60) diagram, a full spin
-     leg 3  (0.60 → 1)   final spin onto the Pacific, zooming in
+     0 → 0.30   photograph sits on the left, title on the right, then globe centres
+     0.22 → 0.36  crossfade to the diagram, still facing the same way
+     0.36 → 1   slow turn onto the Pacific + zoom
    ───────────────────────────────────────────────────────────────────────── */
-const LEG_1 = 0.20
-const LEG_2 = 0.60
-const MORPH = [0.09, 0.20]
-const ZOOM = [0.72, 0.99]
+const MORPH = [0.22, 0.36]
+const ZOOM = [0.38, 1]
+const RECENTER = [0, 0.30]
+const TURN = [0.36, 0.88]
 const IDLE_UNTIL = 0.002
 
 const PAPER = '#ffffff'
-const RED_LOW = '#fde4dc'
-const RED_HIGH = '#7f1d1d'
+const LAND_STROKE = '#ffffff'
+const ISLAND_STROKE = '#5c322c'
 
 const PACIFIC_ROTATION = [-173, 7]
 const START_SCALE = 0.24
@@ -35,7 +37,7 @@ const PACIFIC_LAT_SPAN = 28
 const PACIFIC_PADDING = 0.92
 
 function pacificScale(width, height) {
-  const rad = (deg) => (deg * Math.PI) / 180
+  const rad = (deg) => (deg * Math.PI / 180)
   return (
     PACIFIC_PADDING *
     Math.min(
@@ -45,298 +47,350 @@ function pacificScale(width, height) {
   )
 }
 
+/* Park the globe clearly in the left third so it cannot sit on the title.
+   Visual size reads a bit larger than the camera radius, so we inflate it
+   and keep a gap; a little of the left limb may clip, and that's fine. */
+function parkOffset(width, radius, dock, titleLeft) {
+  if (dock <= 0) return 0
+  const gap = Math.max(72, width * 0.05)
+  const visualR = radius * 1.25
+  const rightPad = Math.min(64, Math.max(24, width * 0.05)) + width * 0.05
+  const fallbackLeft = width - rightPad - Math.min(width * 0.46, 360)
+  const limit = (Number.isFinite(titleLeft) ? titleLeft : fallbackLeft) - gap
+  const leftPad = Math.max(8, width * 0.015)
+  let center = visualR * 0.82 + leftPad
+  center += (width / 2 - center) * 0.28
+  if (center + visualR > limit) center = limit - visualR
+  return (center - width / 2) * dock
+}
+
+function shortestDelta(from, to) {
+  let d = ((to - from) % 360 + 360) % 360
+  if (d > 180) d -= 360
+  return d
+}
+
+function motion(progress, spin) {
+  const morph = easeOut(slice(progress, MORPH[0], MORPH[1]))
+  const zoom = easeInOutSmooth(slice(progress, ZOOM[0], ZOOM[1]))
+  const dock = 1 - easeInOutSmooth(slice(progress, RECENTER[0], RECENTER[1]))
+  const turn = easeInOutSmooth(slice(progress, TURN[0], TURN[1]))
+  const lon = spin + shortestDelta(spin, PACIFIC_ROTATION[0]) * turn
+  return { morph, zoom, dock, lon, tilt: PACIFIC_ROTATION[1] * turn }
+}
+
 const PACIFIC = new Set([
   'Fiji', 'Micronesia', 'Kiribati', 'Marshall Is.', 'Nauru', 'Palau',
   'Papua New Guinea', 'New Caledonia', 'Fr. Polynesia', 'Solomon Is.',
   'Tonga', 'Tuvalu', 'Vanuatu', 'Samoa',
 ])
 
-const MISSING_STATES = [
-  { name: 'Tuvalu', coords: [179.2, -8.5] },
-]
 const NO_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 }
-const MIN_AREA = 40
+const MIN_AREA = 28
 
-const coarseCountries = feature(worldCoarse, worldCoarse.objects.countries).features
-const fineCountries = feature(worldFine, worldFine.objects.countries).features
-const graticule = geoGraticule10()
+const worldCountries = feature(world110, world110.objects.countries).features
 
-const redRamp = scaleLinear()
-  .domain(FOOTPRINT_DOMAIN)
-  .range([RED_LOW, RED_HIGH])
-  .interpolate(interpolateLab)
-  .clamp(true)
+/* Coarse 110m continents (cheap to reproject) + 10m coastlines only for the
+   14 island states, so atolls still have an outline. */
+const diagramCountries = [
+  ...worldCountries
+    .filter((f) => !PACIFIC.has(f.properties.name))
+    .map((f, i) => ({
+      id: `w${i}`,
+      feat: f,
+      name: f.properties.name,
+      isPacific: false,
+      centroid: geoCentroid(f),
+      iso: String(f.id ?? '').padStart(3, '0'),
+    })),
+  ...pacificIslands.features.map((f, i) => ({
+    id: `p${i}`,
+    feat: f,
+    name: f.properties.name,
+    isPacific: true,
+    centroid: geoCentroid(f),
+    iso: String(f.id ?? '').padStart(3, '0'),
+  })),
+]
+
+/* Shares are brutally skewed: China 24.6%, Nauru 0.000002%. A linear ramp
+   puts 112 of 206 countries in the lightest bin; a log ramp makes Chad and
+   Brazil look alike, flattening the very inequality the caption claims. So
+   the scale is CLASSED — the reader compares bands, not shades, and the
+   legend states each band exactly.
+
+   Ramp derived by walking a Lab interpolation until the lightest step clears
+   2:1 against white, then stepping evenly. Verified: monotonic light->dark,
+   lightest 2.06:1, darkest 10.02:1. */
+const SHARE_BREAKS = [0.01, 0.1, 1, 5, 10]
+const SHARE_STEPS = [
+  '#dba99f', '#ca8e82', '#b87267', '#a6574d', '#933c34', '#7f1d1d',
+]
+const redRamp = scaleThreshold().domain(SHARE_BREAKS).range(SHARE_STEPS)
+
+const NO_DATA = '#eceff1'
 
 export function GlobeScene() {
   return (
-    <Scene id="globe" pages={8}>
-      {(progress) => <Globe progress={progress} />}
+    <Scene id="globe" pages={7}>
+      {(progress, progressRef) => (
+        <Globe progress={progress} progressRef={progressRef} />
+      )}
     </Scene>
   )
 }
 
-export function Globe({ progress }) {
+export function Globe({ progress, progressRef }) {
   const [ref, dms] = useChartDimensions(NO_MARGIN)
   const { width, height } = dms
+  const { shares } = useEmissionShares()
+
+  const fillFor = (iso) => {
+    const v = shares?.[iso]?.[SHARE_YEAR]
+    return v == null ? NO_DATA : redRamp(v)
+  }
 
   const spinRef = useRef(0)
   const viewRef = useRef({ lon: 0, radius: 0 })
   const spinningRef = useRef(true)
   const opacityRef = useRef(1)
+  const stageRef = useRef(null)
+  const titleRef = useRef(null)
+  const mapRef = useRef(null)
+  const localProgress = useRef(progress)
+  localProgress.current = progress
+  const pRef = progressRef ?? localProgress
 
-  const morph = easeOut(slice(progress, MORPH[0], MORPH[1]))
-  const zoom = easeInOut(slice(progress, ZOOM[0], ZOOM[1]))
-  const labelFade = slice(zoom, 0.45, 0.9)
+  const zoomSpring = useSpring(0, { stiffness: 90, damping: 22, mass: 0.85 })
+
+  if (width && height && viewRef.current.radius === 0) {
+    const r0 = Math.min(width, height) * START_SCALE
+    viewRef.current = { lon: 0, radius: r0 }
+  }
+
+  const { morph, dock, lon, tilt } = motion(progress, spinRef.current)
   const spinning = progress <= IDLE_UNTIL
   const showDiagram = morph > 0.001
   const showPhoto = morph < 0.995
 
+  /* Rebuild country paths only when the globe *turns*. Zoom is a Motion
+     spring on an SVG scale, so it can run at display refresh. */
+  const drawLon = Math.round(lon * 2) / 2
+  const drawTilt = Math.round(tilt * 2) / 2
+  const rotation = [drawLon, drawTilt]
+
   spinningRef.current = spinning
   opacityRef.current = 1 - morph
 
-  const rotation = useMemo(() => {
-    const spin = spinRef.current
-    let lon
-
-    if (progress <= LEG_1) {
-      lon = spin + (progress / LEG_1) * 180
-    } else if (progress <= LEG_2) {
-      lon = spin + 180 + ((progress - LEG_1) / (LEG_2 - LEG_1)) * 360
-    } else {
-      const from = spin + 540
-      let delta = (((PACIFIC_ROTATION[0] - from) % 360) + 360) % 360
-      if (delta < 180) delta += 360
-      lon = interpolateNumber(from, from + delta)(
-        (progress - LEG_2) / (1 - LEG_2),
-      )
+  useEffect(() => {
+    if (!width || !height) return
+    const cx0 = width / 2
+    const cy0 = height / 2
+    const rDraw = pacificScale(width, height)
+    let frame = 0
+    const tick = () => {
+      const p = pRef.current
+      const m = motion(p, spinRef.current)
+      zoomSpring.set(m.zoom)
+      const z = zoomSpring.get()
+      const base = Math.min(width, height)
+      const r = interpolateNumber(base * START_SCALE, rDraw)(z)
+      const titleLeft = titleRef.current?.getBoundingClientRect().left
+      const offsetX = parkOffset(width, r, m.dock, titleLeft)
+      viewRef.current = { lon: m.lon, radius: r }
+      opacityRef.current = 1 - m.morph
+      spinningRef.current = p <= IDLE_UNTIL
+      if (stageRef.current) {
+        stageRef.current.style.transform = `translate3d(${offsetX}px,0,0)`
+      }
+      if (titleRef.current) {
+        titleRef.current.style.opacity = String(m.dock)
+      }
+      if (mapRef.current && rDraw > 0) {
+        const s = r / rDraw
+        mapRef.current.setAttribute(
+          'transform',
+          `translate(${cx0} ${cy0}) scale(${s}) translate(${-cx0} ${-cy0})`,
+        )
+      }
+      frame = requestAnimationFrame(tick)
     }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [width, height, pRef, zoomSpring])
 
-    return [lon, PACIFIC_ROTATION[1] * zoom]
-  }, [progress, zoom])
-
-  const { paths, markers, labels, graticulePath, radius, cx, cy } = useMemo(() => {
-    const empty = { paths: [], markers: [], labels: [], graticulePath: '', radius: 0, cx: 0, cy: 0 }
+  const { paths, markers, cx, cy } = useMemo(() => {
+    const empty = { paths: [], markers: [], cx: 0, cy: 0 }
     if (!width || !height) return empty
 
-    const base = Math.min(width, height)
-    const r = interpolateNumber(base * START_SCALE, pacificScale(width, height))(zoom)
+    const rDraw = pacificScale(width, height)
     const cx0 = width / 2
     const cy0 = height / 2
 
     if (!showDiagram) {
-      return { ...empty, radius: r, cx: cx0, cy: cy0 }
+      return { ...empty, cx: cx0, cy: cy0 }
     }
 
-    const countries = zoom > 0.2 ? fineCountries : coarseCountries
     const projection = geoOrthographic()
-      .scale(r)
+      .scale(rDraw)
       .translate([cx0, cy0])
       .rotate(rotation)
+      .clipAngle(90)
+      .precision(0.4)
     const path = geoPath(projection)
 
-    const paths = countries.map((f, i) => ({
-      id: `c${i}`,
-      name: f.properties.name,
-      d: path(f) ?? '',
-      value: carbonFootprint(f.properties.name),
-    }))
+    const paths = []
+    const markers = []
 
-    const markers = countries
-      .map((f, i) => {
-        const area = path.area(f)
-        if (area > MIN_AREA) return null
-        const [mx, my] = path.centroid(f)
-        if (!Number.isFinite(mx) || !Number.isFinite(my)) return null
-        return {
-          id: `m${i}`,
-          name: f.properties.name,
-          x: mx,
-          y: my,
-          value: carbonFootprint(f.properties.name),
-        }
-      })
-      .filter(Boolean)
+    for (const c of diagramCountries) {
+      const d = path(c.feat)
+      if (d) {
+        paths.push({
+          id: c.id,
+          name: c.name,
+          d,
+          iso: c.iso,
+          isPacific: c.isPacific,
+        })
+      }
 
-    const labels = countries
-      .map((f, i) => {
-        if (!PACIFIC.has(f.properties.name)) return null
-        const [lx, ly] = path.centroid(f)
-        if (!Number.isFinite(lx) || !Number.isFinite(ly)) return null
-        return { id: `l${i}`, name: f.properties.name, x: lx, y: ly }
-      })
-      .filter(Boolean)
+      if (!c.isPacific) continue
 
-    const centre = [-rotation[0], -rotation[1]]
-    MISSING_STATES.forEach((state, i) => {
-      if (geoDistance(state.coords, centre) > Math.PI / 2) return
-      const xy = projection(state.coords)
-      if (!xy) return
-      markers.push({
-        id: `x${i}`,
-        name: state.name,
-        x: xy[0],
-        y: xy[1],
-        value: carbonFootprint(state.name),
-      })
-      labels.push({ id: `xl${i}`, name: state.name, x: xy[0], y: xy[1] })
-    })
+      const area = d ? path.area(c.feat) : 0
+      const [lx, ly] = path.centroid(c.feat)
+      if (!Number.isFinite(lx) || !Number.isFinite(ly)) continue
 
-    return {
-      radius: r,
-      cx: cx0,
-      cy: cy0,
-      graticulePath: path(graticule) ?? '',
-      paths,
-      markers,
-      labels,
+      if (area < MIN_AREA) {
+        markers.push({
+          id: `m${c.id}`,
+          name: c.name,
+          x: lx,
+          y: ly,
+          iso: c.iso,
+        })
+      }
     }
-  }, [width, height, rotation, zoom, showDiagram])
 
-  viewRef.current = { lon: rotation[0], radius }
+    return { cx: cx0, cy: cy0, paths, markers }
+  }, [width, height, rotation, showDiagram])
 
   if (!width || !height) return <div ref={ref} className="globe" />
 
+  const rDraw = pacificScale(width, height)
+  const rStart = Math.min(width, height) * START_SCALE
+  const s0 = rDraw > 0 ? rStart / rDraw : 1
+  const offset0 = parkOffset(width, rStart, dock)
+
   return (
     <div ref={ref} className="globe">
-      {showPhoto ? (
-        <EarthGL
+      <OpeningTitle ref={titleRef} opacity={dock} />
+
+      <div
+        ref={stageRef}
+        className="globe__stage"
+        style={{ transform: `translate3d(${offset0}px,0,0)` }}
+      >
+        {showPhoto ? (
+          <EarthGL
+            width={width}
+            height={height}
+            viewRef={viewRef}
+            spinRef={spinRef}
+            spinningRef={spinningRef}
+            opacityRef={opacityRef}
+          />
+        ) : null}
+
+        <svg
           width={width}
           height={height}
-          viewRef={viewRef}
-          spinRef={spinRef}
-          spinningRef={spinningRef}
-          opacityRef={opacityRef}
-        />
-      ) : null}
+          role="img"
+          aria-label="Rotating globe that becomes a choropleth of per-capita carbon footprint, then zooms to the Pacific"
+        >
+          <defs>
+            <radialGradient id="shade" cx="34%" cy="30%" r="80%">
+              <stop offset="55%" stopColor="#000" stopOpacity="0" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0.45" />
+            </radialGradient>
+          </defs>
 
-      <svg
-        width={width}
-        height={height}
-        role="img"
-        aria-label="Rotating globe that becomes a choropleth of per-capita carbon footprint, then zooms to the Pacific"
-      >
-        <defs>
-          <radialGradient id="shade" cx="34%" cy="30%" r="80%">
-            <stop offset="55%" stopColor="#000" stopOpacity="0" />
-            <stop offset="100%" stopColor="#000" stopOpacity="0.45" />
-          </radialGradient>
-        </defs>
-
-        <circle cx={cx} cy={cy} r={radius} fill={PAPER} opacity={morph} />
-        <circle cx={cx} cy={cy} r={radius} fill="none"
-                stroke="#d9dde1" strokeWidth="1" opacity={morph} />
-
-        {showDiagram ? (
-          <path d={graticulePath} fill="none" stroke="#e3e7ea"
-                strokeWidth="0.6" opacity={morph} />
-        ) : null}
-
-        {showDiagram ? (
-          <g>
-            {paths.map((c) =>
-              c.d ? (
-                <path
-                  key={c.id}
-                  d={c.d}
-                  fill={redRamp(c.value)}
-                  opacity={morph}
-                  stroke="#ffffff"
-                  strokeOpacity={morph}
-                  strokeWidth={0.5}
-                />
-              ) : null,
-            )}
-          </g>
-        ) : null}
-
-        {showDiagram && zoom > 0.02 ? (
-          <g opacity={morph * zoom}>
-            {markers.map((m) => (
-              <circle
-                key={m.id}
-                cx={m.x}
-                cy={m.y}
-                r={2 + zoom * 6}
-                fill={redRamp(m.value)}
-                stroke="#ffffff"
-                strokeWidth="1.5"
-              />
-            ))}
-          </g>
-        ) : null}
-
-        {labelFade > 0.01 ? (
-          <g opacity={labelFade}>
-            {labels.map((l) => {
-              const flip = l.x > width * 0.72
-              const offset = 10 + zoom * 4
-              return (
-                <text
-                  key={l.id}
-                  className="globe__label"
-                  x={flip ? l.x - offset : l.x + offset}
-                  y={l.y}
-                  dy="0.32em"
-                  textAnchor={flip ? 'end' : 'start'}
-                >
-                  {l.name}
-                </text>
-              )
-            })}
-          </g>
-        ) : null}
-
-        <circle cx={cx} cy={cy} r={radius} fill="url(#shade)"
-                opacity={1 - morph} pointerEvents="none" />
-      </svg>
-
-      <Legend opacity={morph} />
-      <Captions progress={progress} />
-    </div>
-  )
-}
-
-function Legend({ opacity }) {
-  const stops = [0, 5, 10, 15, 20]
-  if (opacity <= 0.01) return null
-  return (
-    <div className="globe__legend" style={{ opacity }}>
-      <p className="globe__legend-title">Carbon footprint · tonnes CO₂ per person</p>
-      <div className="globe__legend-ramp">
-        {stops.map((s) => (
-          <span key={s} style={{ background: redRamp(s) }} />
-        ))}
-      </div>
-      <div className="globe__legend-scale"><span>0</span><span>20+</span></div>
-      <p className="globe__legend-note">Dummy data — placeholder</p>
-    </div>
-  )
-}
-
-function Captions({ progress }) {
-  const beats = [
-    { at: [0.01, 0.19], text: 'One planet, one atmosphere.' },
-    { at: [0.24, 0.58], text: 'Every country draws on it — but not equally.' },
-    { at: [0.72, 1.0], text: 'This is where the bill arrives.' },
-  ]
-  return (
-    <div className="globe__captions">
-      {beats.map((b) => {
-        const o = Math.min(
-          slice(progress, b.at[0], b.at[0] + 0.05),
-          1 - slice(progress, b.at[1] - 0.05, b.at[1]),
-        )
-        return (
-          <p
-            key={b.text}
-            className="globe__caption"
-            style={{ opacity: o, transform: `translate3d(0,${(1 - o) * 16}px,0)` }}
-            aria-hidden={o < 0.5}
+          <g
+            ref={mapRef}
+            className="globe__map"
+            transform={`translate(${cx} ${cy}) scale(${s0}) translate(${-cx} ${-cy})`}
           >
-            {b.text}
-          </p>
-        )
-      })}
+            {morph > 0.001 ? (
+              <>
+                <circle cx={cx} cy={cy} r={rDraw} fill={PAPER} opacity={morph} />
+                <circle cx={cx} cy={cy} r={rDraw} fill="none"
+                        stroke="#d9dde1" strokeWidth="1" opacity={morph} />
+
+                {showDiagram ? (
+                  <g>
+                    {paths.filter((c) => !c.isPacific).map((c) => (
+                      <path
+                        key={c.id}
+                        d={c.d}
+                        fill={fillFor(c.iso)}
+                        opacity={morph}
+                        stroke={LAND_STROKE}
+                        strokeOpacity={morph * 0.9}
+                        strokeWidth={0.5}
+                      />
+                    ))}
+                    {paths.filter((c) => c.isPacific).map((c) => (
+                      <path
+                        key={c.id}
+                        className="globe__island"
+                        d={c.d}
+                        fill={fillFor(c.iso)}
+                        opacity={morph}
+                        stroke={ISLAND_STROKE}
+                        strokeOpacity={morph}
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    ))}
+                  </g>
+                ) : null}
+
+                {showDiagram && markers.length ? (
+                  <g opacity={morph}>
+                    {markers.map((m) => (
+                      <circle
+                        key={m.id}
+                        cx={m.x}
+                        cy={m.y}
+                        r="4"
+                        fill={fillFor(m.iso)}
+                        stroke={ISLAND_STROKE}
+                        strokeWidth="1.1"
+                      />
+                    ))}
+                  </g>
+                ) : null}
+
+                <circle cx={cx} cy={cy} r={rDraw} fill="url(#shade)"
+                        opacity={1 - morph} pointerEvents="none" />
+              </>
+            ) : null}
+          </g>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function OpeningTitle({ ref, opacity }) {
+  return (
+    <div
+      ref={ref}
+      className="globe__title"
+      style={{ opacity }}
+      aria-hidden={opacity < 0.5}
+    >
+      <h1>The climate change planetary boundary: the case of the Pacific</h1>
     </div>
   )
 }

@@ -14,13 +14,21 @@ import Globe from 'react-globe.gl'
  * so the two stay registered through the crossfade.
  */
 const NEAR_ORTHO_FOV = 6
-const SPIN_DEG_PER_MS = 0.004 // ≈ one turn / 90s
+const SPIN_DEG_PER_MS = 0.002 // ≈ one turn / 3 min — slow enough to read
 
 function altitudeForRadius(radius, height) {
   const target = radius / (height / 2)
   const half = Math.tan((NEAR_ORTHO_FOV / 2) * (Math.PI / 180))
   const sin = Math.sin(Math.atan(target * half))
   return sin > 0 ? 1 / sin - 1 : 10
+}
+
+function applyView(globe, lon, radius, height) {
+  if (!globe || radius <= 0) return
+  globe.pointOfView(
+    { lat: 0, lng: -lon, altitude: altitudeForRadius(radius, height) },
+    0,
+  )
 }
 
 export const EarthGL = memo(function EarthGL({
@@ -33,21 +41,27 @@ export const EarthGL = memo(function EarthGL({
 }) {
   const globeRef = useRef(null)
   const wrapRef = useRef(null)
+  const readyRef = useRef(false)
 
-  useEffect(() => {
+  const applyCamera = () => {
     const globe = globeRef.current
-    if (!globe) return
-
+    if (!globe) return false
     const camera = globe.camera()
     camera.fov = NEAR_ORTHO_FOV
     camera.updateProjectionMatrix()
-
     const controls = globe.controls()
     controls.enabled = false
     controls.autoRotate = false
+    globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio ?? 1, 1.5))
+    const { lon, radius } = viewRef.current
+    applyView(globe, lon, radius, height)
+    readyRef.current = true
+    return true
+  }
 
-    globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio ?? 1, 1.75))
-  }, [width, height])
+  useEffect(() => {
+    applyCamera()
+  }, [width, height, viewRef])
 
   useEffect(() => {
     if (!width || !height) return
@@ -66,15 +80,14 @@ export const EarthGL = memo(function EarthGL({
       const globe = globeRef.current
       const { lon, radius } = viewRef.current
       const useLon = spinning ? spinRef.current : lon
+      if (globe && !readyRef.current) applyCamera()
+      applyView(globe, useLon, radius, height)
 
-      if (globe && radius > 0) {
-        globe.pointOfView(
-          { lat: 0, lng: -useLon, altitude: altitudeForRadius(radius, height) },
-          0,
-        )
+      if (wrapRef.current) {
+        wrapRef.current.style.opacity = readyRef.current
+          ? String(opacityRef.current)
+          : '0'
       }
-
-      if (wrapRef.current) wrapRef.current.style.opacity = String(opacityRef.current)
 
       frame = requestAnimationFrame(tick)
     }
@@ -86,7 +99,7 @@ export const EarthGL = memo(function EarthGL({
   if (!width || !height) return null
 
   return (
-    <div ref={wrapRef} className="globe__earth" aria-hidden="true">
+    <div ref={wrapRef} className="globe__earth" aria-hidden="true" style={{ opacity: 0 }}>
       <Globe
         ref={globeRef}
         width={width}
@@ -97,6 +110,9 @@ export const EarthGL = memo(function EarthGL({
         showAtmosphere={false}
         animateIn={false}
         enablePointerInteraction={false}
+        onGlobeReady={() => {
+          applyCamera()
+        }}
         rendererConfig={{
           antialias: true,
           alpha: true,

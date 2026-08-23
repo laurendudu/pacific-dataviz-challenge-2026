@@ -7,12 +7,13 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-weight: var(--font-weight);
   font-size: var(--step-0);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3 { line-height: 1.1; margin: 0; font-weight: 600; letter-spacing: -0.02em; }
+h1, h2, h3 { line-height: 1.1; margin: 0; font-weight: var(--font-weight); letter-spacing: 0; }
 p { margin: 0 0 var(--space-s); }
 svg { display: block; }
 
@@ -33,7 +34,7 @@ svg { display: block; }
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.cover__title { font-size: var(--step-3); font-family: var(--font-serif); font-weight: 400; }
+.cover__title { font-size: var(--step-3); font-family: var(--font-sans); font-weight: var(--font-weight); }
 .cover__standfirst { font-size: var(--step-1); color: var(--text-secondary); max-width: var(--measure); }
 .cover__scroll-cue {
   font-size: var(--step--1);
@@ -154,7 +155,7 @@ svg { display: block; }
   padding: var(--space-xl) var(--space-m);
   text-align: center;
 }
-.outro__line { font-size: var(--step-2); font-family: var(--font-serif); font-weight: 400; }
+.outro__line { font-size: var(--step-2); font-family: var(--font-sans); font-weight: var(--font-weight); }
 
 .colophon {
   border-top: 1px solid var(--surface-3);
@@ -195,7 +196,44 @@ svg { display: block; }
   display: block;
   pointer-events: none;
 }
-.globe__legend, .globe__captions { z-index: 2; }
+.globe__stage {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.globe__map {
+  /* SVG transform attributes map to CSS; keep origin at (0,0) so
+     translate/scale around the globe centre stays registered with WebGL. */
+  transform-origin: 0 0;
+  transform-box: view-box;
+}
+.globe__title {
+  position: absolute;
+  top: 50%;
+  left: auto;
+  right: calc(clamp(1.5rem, 5vw, 4rem) + 5vw);
+  transform: translateY(-50%);
+  z-index: 4;
+  max-width: min(36ch, 46vw);
+  text-align: left;
+  pointer-events: none;
+}
+.globe__title h1 {
+  font-family: var(--font-sans);
+  font-size: var(--step-2);
+  font-weight: var(--font-weight);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+@media (max-width: 40rem) {
+  .globe__title {
+    right: calc(1.25rem + 5vw);
+    max-width: min(28ch, 48vw);
+  }
+  .globe__title h1 { font-size: var(--step-1); }
+}
 
 .globe__captions {
   position: absolute;
@@ -210,9 +248,9 @@ svg { display: block; }
 .globe__caption {
   grid-area: 1 / 1;
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--step-2);
-  font-weight: 400;
+  font-weight: var(--font-weight);
   color: var(--ink);
   text-align: center;
   max-width: 22ch;
@@ -232,12 +270,22 @@ svg { display: block; }
   letter-spacing: 0.06em;
   color: var(--ink-secondary);
 }
-.globe__legend-ramp { display: flex; width: 13rem; height: 8px; border-radius: 999px; overflow: hidden; }
+.globe__legend-ramp { display: flex; width: 15rem; height: 8px; border-radius: 999px; overflow: hidden; }
 .globe__legend-ramp span { flex: 1; }
+.globe__legend-ramp { border-radius: 2px; }
 .globe__legend-scale {
-  display: flex; justify-content: space-between; width: 13rem;
+  display: flex; justify-content: space-between; width: 15rem;
+  padding-inline: 1.25rem;   /* labels mark the breaks between swatches */
   font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-muted);
   margin-top: 0.25rem;
+}
+.globe__legend-swatch {
+  display: inline-block;
+  width: 0.7rem; height: 0.7rem;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  vertical-align: -1px;
+  margin-right: 0.35rem;
 }
 .globe__legend-note {
   margin: 0.4rem 0 0;
@@ -247,6 +295,9 @@ svg { display: block; }
   opacity: 0.8;
 }
 
+.globe__island {
+  paint-order: stroke fill;
+}
 .globe__label {
   fill: var(--ink-secondary);
   font-family: var(--font-mono);

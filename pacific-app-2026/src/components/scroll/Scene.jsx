@@ -6,11 +6,11 @@ import { useScrollProgress } from '../../hooks/useScrollProgress'
  * progress 0 → 1 to drive whatever should move.
  */
 export function Scene({ id, pages = 3, smooth = 0.055, children }) {
-  const [ref, progress] = useScrollProgress({ smooth })
+  const [ref, progress, progressRef] = useScrollProgress({ smooth })
 
   return (
     <section className="scene" id={id} ref={ref} style={{ height: `${pages * 100}svh` }}>
-      <div className="scene__pin">{children(progress)}</div>
+      <div className="scene__pin">{children(progress, progressRef)}</div>
     </section>
   )
 }

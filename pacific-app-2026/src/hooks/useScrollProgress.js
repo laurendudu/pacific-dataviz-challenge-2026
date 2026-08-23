@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from 'react'
  */
 export function useScrollProgress({ smooth = 0.09 } = {}) {
   const ref = useRef(null)
+  const progressRef = useRef(0)
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
@@ -36,16 +37,24 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
     }
 
     let current = target()
+    progressRef.current = current
     let frame = 0
     let running = false
+    let lastPublish = 0
 
-    const loop = () => {
+    const loop = (now) => {
       const to = target()
       current = rigid ? to : current + (to - current) * smooth
       const settled = Math.abs(to - current) < 0.0002
       if (settled) current = to
+      progressRef.current = current
 
-      setProgress((prev) => (prev === current ? prev : current))
+      /* React only needs ~30fps for SVG/captions. The globe camera reads
+         progressRef on its own rAF, so it stays at display refresh. */
+      if (settled || now - lastPublish > 32) {
+        lastPublish = now
+        setProgress((prev) => (prev === current ? prev : current))
+      }
 
       if (settled) {
         running = false
@@ -72,7 +81,7 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
     }
   }, [smooth])
 
-  return [ref, progress]
+  return [ref, progress, progressRef]
 }
 
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
@@ -85,3 +94,6 @@ export const easeOut = (t) => 1 - Math.pow(1 - t, 3)
 
 /** Ease in and out — the Apple curve for a move that starts and ends at rest. */
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+/** Quintic smootherstep — same rest at both ends, without the cubic rush in the middle. */
+export const easeInOutSmooth = (t) => t * t * t * (t * (t * 6 - 15) + 10)
