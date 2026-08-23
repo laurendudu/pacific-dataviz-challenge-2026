@@ -2,6 +2,7 @@
 __pycache__
 memory
 PLAN.md
+data_viz/
 
 # pyaesa workspace — downloaded and computed, rebuilt by the notebooks
 data_raw/
