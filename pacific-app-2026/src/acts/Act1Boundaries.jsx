@@ -1,13 +1,25 @@
-import { PlaceholderFigure } from '../components/chart/PlaceholderFigure'
-import { acts } from '../content/acts'
-
-const act = acts.find((a) => a.id === 'act-1')
+import { PlanetaryBoundaries, schemaEarthRadius } from '../components/chart/PlanetaryBoundaries'
+import { ChartFrame } from '../components/chart/ChartFrame'
 
 /**
- * Planetary boundaries radial
- * TODO: d3-shape arc() for the wedges, d3-scale for radius; reveal wedges by step
- * D3 for the math (scales/layout), JSX for every mark — see CLAUDE.md.
+ * Planetary boundaries radial — D3 for arcs and radius, JSX for every mark.
  */
-export function Act1Boundaries({ step, progress }) {
-  return <PlaceholderFigure label="Planetary boundaries radial" dataset={act.dataset} step={step} progress={progress} />
+export function Act1Boundaries({ progress = 1 }) {
+  return (
+    <ChartFrame
+      title="Planetary boundaries"
+      desc="Nine planetary boundaries. Seven are currently crossed."
+    >
+      {({ boundedWidth, boundedHeight }) => (
+        <PlanetaryBoundaries
+          progress={progress}
+          cx={boundedWidth / 2}
+          cy={boundedHeight / 2}
+          fromR={schemaEarthRadius(boundedWidth, boundedHeight)}
+          width={boundedWidth}
+          height={boundedHeight}
+        />
+      )}
+    </ChartFrame>
+  )
 }

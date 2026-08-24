@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { useSpring } from 'motion/react'
-import { geoOrthographic, geoPath, geoCentroid } from 'd3-geo'
+import { geoOrthographic, geoPath, geoCentroid, geoGraticule } from 'd3-geo'
 import { scaleThreshold } from 'd3-scale'
 import { interpolateNumber } from 'd3-interpolate'
 import { feature } from 'topojson-client'
@@ -9,26 +9,42 @@ import pacificIslands from '../data/pacificIslands.json'
 import { Scene } from '../components/scroll/Scene'
 import { EarthGL } from './EarthGL'
 import { useChartDimensions } from '../components/chart/useChartDimensions'
+import { PlanetaryBoundaries, SchemaLegend, schemaEarthRadius } from '../components/chart/PlanetaryBoundaries'
 import { slice, easeOut, easeInOutSmooth } from '../hooks/useScrollProgress'
 import { useEmissionShares, SHARE_YEAR } from '../data/emissionShares'
 
 /* ── choreography ─────────────────────────────────────────────────────────
-   Almost no extra spinning on scroll — idle spin only, then a single
-   shortest-path turn onto the Pacific while zooming.
+   Opening keeps its original scroll distance (7 of 16 pages). After the
+   Pacific zoom: pull back, a short spin, then the earth becomes the
+   planetary-boundaries schema.
 
-     0 → 0.30   photograph sits on the left, title on the right, then globe centres
-     0.22 → 0.36  crossfade to the diagram, still facing the same way
-     0.36 → 1   slow turn onto the Pacific + zoom
+     0 → 0.13      photograph left, title right, globe centres
+     0.10 → 0.16   crossfade to the diagram
+     0.16 → 0.44   turn onto the Pacific + zoom
+     0.46 → 0.58   zoom back out to full earth
+     0.55 → 0.65   spin a tad
+     0.63 → 1      earth becomes the schema
    ───────────────────────────────────────────────────────────────────────── */
-const MORPH = [0.22, 0.36]
-const ZOOM = [0.38, 1]
-const RECENTER = [0, 0.30]
-const TURN = [0.36, 0.88]
+const OPENING_PAGES = 7
+const TOTAL_PAGES = 18
+const T = OPENING_PAGES / TOTAL_PAGES
+
+const MORPH = [0.22 * T, 0.36 * T]
+const ZOOM_IN = [0.38 * T, T]
+const ZOOM_OUT = [T + 0.02, T + 0.14]
+const RECENTER = [0, 0.30 * T]
+const TURN = [0.36 * T, 0.88 * T]
+const SPIN_TAD = [T + 0.11, T + 0.21]
+const SCHEMA = [T + 0.19, 1]
 const IDLE_UNTIL = 0.002
+const SPIN_AMOUNT = 36
 
 const PAPER = '#ffffff'
 const LAND_STROKE = '#ffffff'
 const ISLAND_STROKE = '#5c322c'
+const GRID_STROKE = '#c5ccd3'
+
+const graticule = geoGraticule().step([15, 15])
 
 const PACIFIC_ROTATION = [-173, 7]
 const START_SCALE = 0.24
@@ -72,11 +88,17 @@ function shortestDelta(from, to) {
 
 function motion(progress, spin) {
   const morph = easeOut(slice(progress, MORPH[0], MORPH[1]))
-  const zoom = easeInOutSmooth(slice(progress, ZOOM[0], ZOOM[1]))
+  const zoomIn = easeInOutSmooth(slice(progress, ZOOM_IN[0], ZOOM_IN[1]))
+  const zoomOut = easeInOutSmooth(slice(progress, ZOOM_OUT[0], ZOOM_OUT[1]))
+  const zoom = zoomIn * (1 - zoomOut)
   const dock = 1 - easeInOutSmooth(slice(progress, RECENTER[0], RECENTER[1]))
   const turn = easeInOutSmooth(slice(progress, TURN[0], TURN[1]))
-  const lon = spin + shortestDelta(spin, PACIFIC_ROTATION[0]) * turn
-  return { morph, zoom, dock, lon, tilt: PACIFIC_ROTATION[1] * turn }
+  const spinTad = easeInOutSmooth(slice(progress, SPIN_TAD[0], SPIN_TAD[1]))
+  const schema = slice(progress, SCHEMA[0], SCHEMA[1])
+  const land = 1 - easeOut(slice(progress, SCHEMA[0], SCHEMA[0] + 0.07))
+  const lon = spin + shortestDelta(spin, PACIFIC_ROTATION[0]) * turn + SPIN_AMOUNT * spinTad
+  const tilt = PACIFIC_ROTATION[1] * turn * (1 - 0.4 * spinTad)
+  return { morph, zoom, zoomOut, dock, lon, tilt, schema, land }
 }
 
 const PACIFIC = new Set([
@@ -132,7 +154,7 @@ const NO_DATA = '#eceff1'
 
 export function GlobeScene() {
   return (
-    <Scene id="globe" pages={7}>
+    <Scene id="globe" pages={TOTAL_PAGES}>
       {(progress, progressRef) => (
         <Globe progress={progress} progressRef={progressRef} />
       )}
@@ -168,10 +190,11 @@ export function Globe({ progress, progressRef }) {
     viewRef.current = { lon: 0, radius: r0 }
   }
 
-  const { morph, dock, lon, tilt } = motion(progress, spinRef.current)
+  const { morph, dock, lon, tilt, schema, land } = motion(progress, spinRef.current)
   const spinning = progress <= IDLE_UNTIL
-  const showDiagram = morph > 0.001
+  const showDiagram = morph > 0.001 && land > 0.01
   const showPhoto = morph < 0.995
+  const landOpacity = morph * land
 
   /* Rebuild country paths only when the globe *turns*. Zoom is a Motion
      spring on an SVG scale, so it can run at display refresh. */
@@ -193,8 +216,10 @@ export function Globe({ progress, progressRef }) {
       const m = motion(p, spinRef.current)
       zoomSpring.set(m.zoom)
       const z = zoomSpring.get()
-      const base = Math.min(width, height)
-      const r = interpolateNumber(base * START_SCALE, rDraw)(z)
+      const rOpen = Math.min(width, height) * START_SCALE
+      const rFar = schemaEarthRadius(width, height)
+      const rNear = interpolateNumber(rOpen, rFar)(m.zoomOut)
+      const r = interpolateNumber(rNear, rDraw)(z)
       const titleLeft = titleRef.current?.getBoundingClientRect().left
       const offsetX = parkOffset(width, r, m.dock, titleLeft)
       viewRef.current = { lon: m.lon, radius: r }
@@ -219,8 +244,8 @@ export function Globe({ progress, progressRef }) {
     return () => cancelAnimationFrame(frame)
   }, [width, height, pRef, zoomSpring])
 
-  const { paths, markers, cx, cy } = useMemo(() => {
-    const empty = { paths: [], markers: [], cx: 0, cy: 0 }
+  const { paths, markers, cx, cy, graticuleD } = useMemo(() => {
+    const empty = { paths: [], markers: [], cx: 0, cy: 0, graticuleD: null }
     if (!width || !height) return empty
 
     const rDraw = pacificScale(width, height)
@@ -238,6 +263,7 @@ export function Globe({ progress, progressRef }) {
       .clipAngle(90)
       .precision(0.4)
     const path = geoPath(projection)
+    const graticuleD = path(graticule())
 
     const paths = []
     const markers = []
@@ -271,13 +297,14 @@ export function Globe({ progress, progressRef }) {
       }
     }
 
-    return { cx: cx0, cy: cy0, paths, markers }
+    return { cx: cx0, cy: cy0, paths, markers, graticuleD }
   }, [width, height, rotation, showDiagram])
 
   if (!width || !height) return <div ref={ref} className="globe" />
 
   const rDraw = pacificScale(width, height)
   const rStart = Math.min(width, height) * START_SCALE
+  const rSchema = schemaEarthRadius(width, height)
   const s0 = rDraw > 0 ? rStart / rDraw : 1
   const offset0 = parkOffset(width, rStart, dock)
 
@@ -305,7 +332,7 @@ export function Globe({ progress, progressRef }) {
           width={width}
           height={height}
           role="img"
-          aria-label="Rotating globe that becomes a choropleth of per-capita carbon footprint, then zooms to the Pacific"
+          aria-label="Rotating globe that zooms to the Pacific, then becomes a planetary-boundaries diagram"
         >
           <defs>
             <radialGradient id="shade" cx="34%" cy="30%" r="80%">
@@ -321,9 +348,21 @@ export function Globe({ progress, progressRef }) {
           >
             {morph > 0.001 ? (
               <>
-                <circle cx={cx} cy={cy} r={rDraw} fill={PAPER} opacity={morph} />
+                <circle cx={cx} cy={cy} r={rDraw} fill={PAPER} opacity={landOpacity} />
                 <circle cx={cx} cy={cy} r={rDraw} fill="none"
-                        stroke="#d9dde1" strokeWidth="1" opacity={morph} />
+                        stroke="#d9dde1" strokeWidth="1" opacity={landOpacity} />
+
+                {graticuleD ? (
+                  <path
+                    d={graticuleD}
+                    fill="none"
+                    stroke={GRID_STROKE}
+                    strokeWidth={0.75}
+                    strokeOpacity={landOpacity * 0.55}
+                    vectorEffect="non-scaling-stroke"
+                    pointerEvents="none"
+                  />
+                ) : null}
 
                 {showDiagram ? (
                   <g>
@@ -332,9 +371,9 @@ export function Globe({ progress, progressRef }) {
                         key={c.id}
                         d={c.d}
                         fill={fillFor(c.iso)}
-                        opacity={morph}
+                        opacity={landOpacity}
                         stroke={LAND_STROKE}
-                        strokeOpacity={morph * 0.9}
+                        strokeOpacity={landOpacity * 0.9}
                         strokeWidth={0.5}
                       />
                     ))}
@@ -344,9 +383,9 @@ export function Globe({ progress, progressRef }) {
                         className="globe__island"
                         d={c.d}
                         fill={fillFor(c.iso)}
-                        opacity={morph}
+                        opacity={landOpacity}
                         stroke={ISLAND_STROKE}
-                        strokeOpacity={morph}
+                        strokeOpacity={landOpacity}
                         strokeWidth="1.4"
                         strokeLinejoin="round"
                         strokeLinecap="round"
@@ -356,7 +395,7 @@ export function Globe({ progress, progressRef }) {
                 ) : null}
 
                 {showDiagram && markers.length ? (
-                  <g opacity={morph}>
+                  <g opacity={landOpacity}>
                     {markers.map((m) => (
                       <circle
                         key={m.id}
@@ -376,9 +415,54 @@ export function Globe({ progress, progressRef }) {
               </>
             ) : null}
           </g>
+
+          {schema > 0.001 ? (
+            <PlanetaryBoundaries
+              progress={schema}
+              cx={cx}
+              cy={cy}
+              fromR={rSchema}
+              width={width}
+              height={height}
+            />
+          ) : null}
         </svg>
       </div>
+
+      {schema > 0.001 ? <SchemaLegend progress={schema} /> : null}
+
+      {schema > 0.001 ? (
+        <div className="globe__captions" aria-hidden="true">
+          <GlobeCaption progress={schema} from={0.04} to={0.42}>
+            Our earth is bounded.
+          </GlobeCaption>
+          <GlobeCaption progress={schema} from={0.44} to={0.68}>
+            9 planetary boundaries define a safe operating space for humanity.
+          </GlobeCaption>
+          <GlobeCaption progress={schema} from={0.82} to={1.05}>
+            Let's take a closer look at climate change.
+          </GlobeCaption>
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+function GlobeCaption({ progress, from, to, children }) {
+  const fade = 0.14 * (to - from)
+  const inOpacity = slice(progress, from, from + fade)
+  const outOpacity = 1 - slice(progress, to - fade, to)
+  const opacity = Math.min(inOpacity, outOpacity)
+  const y = (1 - easeOut(inOpacity)) * 18
+  if (opacity <= 0.001) return null
+
+  return (
+    <p
+      className="globe__caption"
+      style={{ opacity, transform: `translate3d(0, ${y}px, 0)` }}
+    >
+      {children}
+    </p>
   )
 }
 
