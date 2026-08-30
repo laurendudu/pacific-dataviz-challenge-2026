@@ -13,11 +13,16 @@ import { useData } from './useData'
  * 1 is a fair share; below 1 is inside the allocation; above 1 is overshoot.
  */
 export const YEAR = 2023
-export const ASR_URL = '/data/asr.json'
+
+/* Site base, so the fetches survive the GitHub Pages project subpath.
+   '/' in dev, '/pacific-dataviz-challenge-2026/' in a production build. */
+const BASE = import.meta.env.BASE_URL
+
+export const ASR_URL = `${BASE}data/asr.json`
 export const ASR_TABLES = {
-  eg: '/data/asr.json',
-  gf: '/data/asr_gf.json',
-  pr: '/data/asr_gdp.json',
+  eg: `${BASE}data/asr.json`,
+  gf: `${BASE}data/asr_gf.json`,
+  pr: `${BASE}data/asr_gdp.json`,
 }
 
 /**

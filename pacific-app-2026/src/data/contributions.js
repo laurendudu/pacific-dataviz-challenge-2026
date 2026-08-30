@@ -10,7 +10,7 @@ import { useState, useEffect, useMemo } from 'react'
  * Kosovo, Western Sahara, the Falklands and other dependencies) fall through
  * to the no-data grey.
  */
-const URL = '/data/contributions.json'
+const URL = `${import.meta.env.BASE_URL}data/contributions.json`
 
 export function useContributions() {
   const [state, setState] = useState({ data: null, error: null })
