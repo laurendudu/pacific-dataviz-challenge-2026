@@ -1,15 +1,15 @@
 import { useId, useMemo } from 'react'
 import { arc } from 'd3-shape'
 import { scaleLinear } from 'd3-scale'
-import { interpolateNumber } from 'd3-interpolate'
-import { slice, easeOut, easeInOutSmooth } from '../../hooks/useScrollProgress'
+import { interpolateNumber, interpolateRgb } from 'd3-interpolate'
+import { slice, easeOut, easeInOutSmooth, beatOpacity } from '../../hooks/useScrollProgress'
 import {
   BOUNDARIES,
   HIGH_RISK,
+  SCALE_MAX,
   STATUS_FILL,
   STATUS_STROKE,
   statusOf,
-  CROSSED,
 } from '../../data/planetaryBoundaries'
 
 /* Visual radii relative to the earth / planetary-boundary circle. */
@@ -22,6 +22,21 @@ const RING = '#8b95a0'
 const SPOKE = '#c5ccd3'
 const PB_STROKE = '#4a5560'
 const HR_STROKE = '#d4a017'
+const GREY_FILL = '#b8c0c8'
+const GREY_STROKE = '#8b95a0'
+
+const FILL_FROM_GREY = Object.fromEntries(
+  Object.entries(STATUS_FILL).map(([k, hex]) => [k, interpolateRgb(GREY_FILL, hex)]),
+)
+const STROKE_FROM_GREY = Object.fromEntries(
+  Object.entries(STATUS_STROKE).map(([k, hex]) => [k, interpolateRgb(GREY_STROKE, hex)]),
+)
+
+/** 7-of-9 caption — full colour, no climate dim. */
+export const SEVEN_CROSSED = { from: 0.70, to: 0.80 }
+
+/** Climate caption and wedge-focus share this window so they cannot drift. */
+export const CLIMATE_LOOK = { from: 0.82, to: 1.05 }
 
 /**
  * Scroll-driven planetary-boundaries figure. `progress` is 0→1 through the
@@ -31,8 +46,10 @@ const HR_STROKE = '#d4a017'
  *   0.08  dashed radar rings
  *   0.28  rings settle: safe space, planetary boundary, high-risk line
  *   0.48  nine spokes
- *   0.62  names
- *   0.66  values
+ *   0.54  names
+ *   0.52  values grow in grey
+ *   0.60  grey → status colour (done before the 7-of-9 caption)
+ *   0.82  climate caption + highlight; other wedges recede
  */
 export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) {
   const uid = useId().replace(/:/g, '')
@@ -40,9 +57,12 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
 
   const radar = easeOut(slice(p, 0.08, 0.26))
   const settle = easeInOutSmooth(slice(p, 0.26, 0.46))
-  const spokesIn = easeOut(slice(p, 0.46, 0.60))
-  const namesIn = easeOut(slice(p, 0.58, 0.74))
-  const valuesIn = easeOut(slice(p, 0.66, 0.92))
+  const spokesIn = easeOut(slice(p, 0.46, 0.56))
+  const namesIn = easeOut(slice(p, 0.50, 0.62))
+  const valuesIn = easeOut(slice(p, 0.52, 0.64))
+  const zonesOut = easeOut(slice(p, 0.50, 0.62))
+  const colorize = easeInOutSmooth(slice(p, 0.60, 0.68))
+  const focus = beatOpacity(p, CLIMATE_LOOK.from, CLIMATE_LOOK.to)
 
   const earthR = fromR
   const hrR = earthR * interpolateNumber(RADAR[2], HR_RATIO)(settle)
@@ -50,8 +70,8 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
   const rScale = useMemo(
     () =>
       scaleLinear()
-        .domain([0, 1, HIGH_RISK, 2.2])
-        .range([0, earthR, earthR * HR_RATIO, earthR * 1.72])
+        .domain([0, 1, HIGH_RISK, SCALE_MAX])
+        .range([0, earthR, earthR * HR_RATIO, earthR * SPOKE_RATIO])
         .clamp(true),
     [earthR],
   )
@@ -71,22 +91,24 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
       const startAngle = i * step - step / 2
       const endAngle = startAngle + step
       const mid = startAngle + step / 2
+      const status = statusOf(b)
       out.push({
         ...b,
         i,
         d: outer > 1.5 ? wedgeArc({ innerRadius: 0, outerRadius: outer, startAngle, endAngle }) : null,
-        fill: STATUS_FILL[statusOf(b.value)],
-        stroke: STATUS_STROKE[statusOf(b.value)],
+        fill: FILL_FROM_GREY[status](colorize),
+        stroke: STROKE_FROM_GREY[status](colorize),
         startAngle,
         endAngle,
         mid,
         lx: cx + Math.sin(mid) * earthR * LABEL_RATIO,
         ly: cy - Math.cos(mid) * earthR * LABEL_RATIO,
         opacity: t,
+        isClimate: b.id === 'climate',
       })
     }
     return out
-  }, [valuesIn, rScale, wedgeArc, n, step, cx, cy, earthR])
+  }, [valuesIn, colorize, rScale, wedgeArc, n, step, cx, cy, earthR])
 
   const safeR = earthR * 0.82
   const zoneR = (earthR + hrR) / 2
@@ -112,15 +134,15 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         cy={cy}
         r={earthR}
         fill="#e3f6ea"
-        opacity={settle * (1 - valuesIn * 0.72)}
+        opacity={settle * (1 - zonesOut)}
       />
 
-      {/* Zone of increasing risk — the band between the two lines. */}
+      {/* Band between the planetary-boundary circle and the high-risk line. */}
       <path
         d={annulus(cx, cy, earthR, hrR)}
         fill="#fff6cc"
         fillRule="evenodd"
-        opacity={settle * (1 - valuesIn * 0.65)}
+        opacity={settle * (1 - zonesOut)}
       />
 
       {wedges.map((w) =>
@@ -131,7 +153,7 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
             fill={w.fill}
             stroke={w.stroke}
             strokeWidth="0.7"
-            opacity={w.opacity}
+            opacity={Math.min(1, w.opacity / 0.2) * (w.isClimate ? 1 : 1 - focus * 0.78)}
             transform={`translate(${cx} ${cy})`}
           />
         ) : null,
@@ -191,20 +213,37 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         )
       })}
 
-      <text className="schema__ring-label" opacity={settle * (1 - valuesIn * 0.7)}>
-        <textPath href={`#schema-safe-${uid}`} startOffset="50%" textAnchor="middle">
-          Safe operating space
-        </textPath>
-      </text>
-      <text className="schema__ring-label schema__ring-label--muted" opacity={settle * (1 - valuesIn * 0.55)}>
-        <textPath href={`#schema-zone-${uid}`} startOffset="50%" textAnchor="middle">
-          Zone of increasing risk
-        </textPath>
-      </text>
-
       {wedges.map((w) => (
         <NameLabel key={`n-${w.id}`} wedge={w} opacity={namesIn} />
       ))}
+
+      {/* Painted last so the curved zone names sit on top of wedges. */}
+      <text
+        className="schema__ring-label"
+        fill="#111111"
+        stroke="#ffffff"
+        strokeWidth="2.25"
+        paintOrder="stroke"
+        opacity={settle}
+        pointerEvents="none"
+      >
+        <textPath href={`#schema-safe-${uid}`} startOffset="50%" textAnchor="middle" fill="#111111">
+          Safe operating space
+        </textPath>
+      </text>
+      <text
+        className="schema__ring-label"
+        fill="#111111"
+        stroke="#ffffff"
+        strokeWidth="2.25"
+        paintOrder="stroke"
+        opacity={settle}
+        pointerEvents="none"
+      >
+        <textPath href={`#schema-zone-${uid}`} startOffset="50%" textAnchor="middle" fill="#111111">
+          Zone of increasing risk
+        </textPath>
+      </text>
     </g>
   )
 }
@@ -231,31 +270,22 @@ function NameLabel({ wedge, opacity }) {
 
 export function SchemaLegend({ progress }) {
   const settle = easeOut(slice(progress, 0.28, 0.48))
-  const valuesIn = easeOut(slice(progress, 0.70, 0.84))
   if (settle <= 0.001) return null
 
   return (
     <aside className="schema-legend" style={{ opacity: settle }} aria-hidden={settle < 0.5}>
       <div className="schema-legend__row">
         <span className="schema-legend__swatch schema-legend__swatch--safe" />
-        <span>Safe operating space</span>
+        <span className="schema-legend__label">Safe operating space</span>
       </div>
       <div className="schema-legend__row">
         <span className="schema-legend__line" />
-        <span>Planetary boundary</span>
+        <span className="schema-legend__label">Planetary boundary</span>
       </div>
-      <div className="schema-legend__block">
-        <div className="schema-legend__row">
-          <span className="schema-legend__line schema-legend__line--risk" />
-          <span>High risk line</span>
-        </div>
-        <p className="schema-legend__sub">Zone of increasing risk</p>
+      <div className="schema-legend__row">
+        <span className="schema-legend__line schema-legend__line--risk" />
+        <span className="schema-legend__label">High risk line</span>
       </div>
-      {valuesIn > 0.001 ? (
-        <p className="schema-legend__count" style={{ opacity: valuesIn }}>
-          {CROSSED} of 9 crossed
-        </p>
-      ) : null}
     </aside>
   )
 }
