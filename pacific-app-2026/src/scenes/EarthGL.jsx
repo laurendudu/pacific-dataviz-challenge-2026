@@ -12,6 +12,10 @@ import Globe from 'react-globe.gl'
  * globe.gl uses a perspective camera; the SVG overlay uses d3's
  * orthographic projection. A narrow FOV at long distance is near-ortho,
  * so the two stay registered through the crossfade.
+ *
+ * `width` / `height` must stay constant through the opening handoff —
+ * react-globe.gl resizes its canvas when they change. The parent freezes
+ * the first viewport measure so an overlay sidebar cannot remount WebGL.
  */
 const NEAR_ORTHO_FOV = 6
 const SPIN_DEG_PER_MS = 0.002 // ≈ one turn / 3 min — slow enough to read
@@ -69,8 +73,36 @@ export const EarthGL = memo(function EarthGL({
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let last = performance.now()
     let frame = 0
+    let sleepTimer = 0
 
     const tick = (now) => {
+      const op = opacityRef.current
+      if (wrapRef.current) {
+        const ready = readyRef.current
+        wrapRef.current.style.opacity = ready ? String(op) : '0'
+        /* Drop the compositor layer once faded — keeps WebGL alive without
+           burning a full-screen canvas over the SVG crossfade. */
+        wrapRef.current.style.visibility = ready && op >= 0.01 ? 'visible' : 'hidden'
+      }
+
+      /* Sleep the camera loop after the crossfade. Remounting react-globe.gl
+         mid-handoff was the hitch; scrubbing back just wakes this loop. */
+      if (op < 0.01) {
+        if (!sleepTimer) {
+          const poll = () => {
+            sleepTimer = 0
+            if (opacityRef.current >= 0.01) {
+              last = performance.now()
+              frame = requestAnimationFrame(tick)
+              return
+            }
+            sleepTimer = window.setTimeout(poll, 80)
+          }
+          sleepTimer = window.setTimeout(poll, 80)
+        }
+        return
+      }
+
       const dt = Math.min(now - last, 48)
       last = now
 
@@ -83,23 +115,20 @@ export const EarthGL = memo(function EarthGL({
       if (globe && !readyRef.current) applyCamera()
       applyView(globe, useLon, radius, height)
 
-      if (wrapRef.current) {
-        wrapRef.current.style.opacity = readyRef.current
-          ? String(opacityRef.current)
-          : '0'
-      }
-
       frame = requestAnimationFrame(tick)
     }
 
     frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      if (sleepTimer) window.clearTimeout(sleepTimer)
+    }
   }, [width, height, viewRef, spinRef, spinningRef, opacityRef])
 
   if (!width || !height) return null
 
   return (
-    <div ref={wrapRef} className="globe__earth" aria-hidden="true" style={{ opacity: 0 }}>
+    <div ref={wrapRef} className="globe__earth" aria-hidden="true" style={{ opacity: 0, visibility: 'hidden' }}>
       <Globe
         ref={globeRef}
         width={width}
