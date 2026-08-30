@@ -34,10 +34,16 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # public/data is a symlink to ../../data_viz, so this fails loudly here
-      # rather than as a 404 on the live site if those tables stop being tracked.
-      - name: Check the ASR tables made it into the bundle
-        run: test -f dist/data/asr.json && test -f dist/data/contributions.json
+      # public/data is a symlink to ../../data_viz, which is ignored except for
+      # the tracked tables — so a table the app fetches but nobody un-ignored
+      # fails loudly here rather than as a 404 on the live site.
+      - name: Check every table the app fetches made it into the bundle
+        run: |
+          missing=0
+          for f in $(grep -rho 'data/[a-z_]*\.json' src | sort -u); do
+            if [ ! -f "dist/$f" ]; then echo "missing: dist/$f"; missing=1; fi
+          done
+          exit $missing
 
       # Path is workspace-relative: `defaults.run` only applies to `run` steps.
       - uses: actions/upload-pages-artifact@v3

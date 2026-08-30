@@ -2,7 +2,7 @@
 __pycache__
 memory
 PLAN.md
-# Notebook outputs. The four tables the app fetches at runtime are tracked:
+# Notebook outputs. The tables the app fetches at runtime are tracked:
 # pacific-app-2026/public/data symlinks here, so they must be in the repo for
 # the Pages build to emit dist/data.
 data_viz/*
@@ -10,6 +10,9 @@ data_viz/*
 !data_viz/asr_gf.json
 !data_viz/asr_gdp.json
 !data_viz/contributions.json
+!data_viz/scatter.json
+!data_viz/tourism.json
+!data_viz/energy.json
 
 # pyaesa workspace — downloaded and computed, rebuilt by the notebooks
 data_raw/
