@@ -1,5 +1,7 @@
 /* ── Design tokens ───────────────────────────────────────────────────────────
-   Dark-committed editorial piece: deep-ocean surface, one mode.
+   Light editorial piece. Type and ink follow Apple’s public web language:
+   SF / Helvetica Neue at regular+semibold, near-black on white, secondary
+   grey that still clears WCAG AA at caption size.
    Series slots are the validated categorical order, dark steps.
    Verified with the dataviz validator against surface #0c1720:
    lightness band PASS · chroma floor PASS · CVD sep PASS (worst adj ΔE 8.4)
@@ -10,28 +12,30 @@
 :root {
   color-scheme: light;
 
-  /* Light shell — the globe sequence is on white */
+  /* Light shell — Apple-like paper and ink */
   --paper: #ffffff;
-  --ink: #12171c;
-  --ink-secondary: #47535e;
-  --ink-muted: #7c8894;
-  --hairline: #e3e7ea;
+  --ink: #1d1d1f;
+  --ink-secondary: #6e6e73; /* ~4.6:1 on white — readable at 13px+ */
+  --ink-muted: #6e6e73;
+  --hairline: #d2d2d7;
+  /* Timeline panel. The stage stays full-bleed; the panel overlays after the title. */
+  --app-sidebar: 16rem;
 
-  /* Surfaces */
+  /* Surfaces (dark chart tokens — keep for any remaining dark figures) */
   --surface-0: #08111a;   /* page ground, deepest */
   --surface-1: #0c1720;   /* chart surface — the validated one */
   --surface-2: #12212c;   /* raised: step cards, tooltips */
   --surface-3: #1b2f3c;   /* hairlines, wells */
 
-  /* Ink */
+  /* Ink on dark surfaces */
   --text-primary:   #f2f6f7;
   --text-secondary: #a9bcc4;
   --text-muted:     #6f858f;
 
   /* Categorical series — fixed order, never cycled */
   --series-1: #3987e5;  /* blue    */
-  --series-2: #d95926;  /* orange  */
-  --series-3: #199e70;  /* aqua    */
+  --series-2: #c45a30;  /* rust — large emitters, sits with the globe terracotta */
+  --series-3: #1b7a68;  /* lagoon — Pacific, teal rather than mint */
   --series-4: #c98500;  /* yellow  */
   --series-5: #d55181;  /* magenta */
   --series-6: #008300;  /* green   */
@@ -49,30 +53,41 @@
   --breached:  var(--status-critical);  /* boundary transgressed / ASR > 1     */
   --pacific:   var(--series-3);         /* Pacific nations                     */
   --emitter:   var(--series-2);         /* high-ASR economies                  */
+  --world:     #a8b2b8;                 /* rest-of-world marks on white        */
 
   /* Chart furniture — recessive by rule */
   --grid-line: #1b2f3c;
   --axis-line: #2a4453;
 
-  /* Type — Helvetica Light unless a scene opts out */
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Type — system UI (SF on Apple) then Helvetica Neue. Regular body, never Light. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif: var(--font-sans);
   --font-mono: var(--font-sans);
-  --font-weight: 300;
+  --font-weight: 400;
+  --font-weight-display: 600;
 
-  --step--1: clamp(0.78rem, 0.75rem + 0.15vw, 0.86rem);
-  --step-0:  clamp(1rem, 0.95rem + 0.25vw, 1.13rem);
-  --step-1:  clamp(1.33rem, 1.2rem + 0.6vw, 1.7rem);
-  --step-2:  clamp(1.8rem, 1.5rem + 1.4vw, 2.9rem);
-  --step-3:  clamp(2.4rem, 1.8rem + 3vw, 5rem);
+  --step--1: clamp(0.8125rem, 0.78rem + 0.18vw, 0.875rem); /* 13–14px */
+  --step-0:  clamp(1.0625rem, 1rem + 0.28vw, 1.1875rem);   /* 17–19px */
+  --step-1:  clamp(1.35rem, 1.22rem + 0.55vw, 1.65rem);    /* 21.6–26.4px */
+  --step-2:  clamp(2rem, 1.55rem + 1.7vw, 3.2rem);
+  --step-3:  clamp(2.6rem, 1.9rem + 3.2vw, 5.25rem);
 
   /* Space */
   --space-xs: 0.5rem;
   --space-s:  1rem;
-  --space-m:  1.75rem;
-  --space-l:  3rem;
-  --space-xl: 6rem;
+  --space-m:  2rem;
+  --space-l:  3.5rem;
+  --space-xl: 6.5rem;
 
-  --measure: 34rem;
-  --radius: 4px;
+  --scene-pad-top: clamp(4.5rem, 11svh, 6.75rem);
+  --scene-pad-x: clamp(1.75rem, 4.5vw, 4rem);
+
+  --measure: 36rem;
+  --radius: 10px;
+}
+
+@media (max-width: 48rem) {
+  :root {
+    --app-sidebar: 0px;
+  }
 }
