@@ -8,3 +8,6 @@ data_viz/
 data_raw/
 data_processed/
 asr/
+
+# QA screenshots taken while tuning scenes
+.qa-*.png
