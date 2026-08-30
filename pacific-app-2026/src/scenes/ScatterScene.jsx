@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { PacificWorldScatter, formatAsr, formatGdp, scatterDomains } from '../components/chart/PacificWorldScatter'
+import { PacificWorldScatter, scatterDomains } from '../components/chart/PacificWorldScatter'
 import { Scene } from '../components/scroll/Scene'
 import {
-  SCATTER_COUNTRIES,
-  SCATTER_IS_DUMMY,
   SCATTER_PLOTS,
+  X_VARS,
+  X_VAR_BY_ID,
   asrOf,
+  formatAsr,
+  formatGdp,
+  formatExposure,
+  useScatterCountries,
 } from '../data/scatter'
 
 const FADE = {
@@ -15,9 +19,13 @@ const FADE = {
 }
 
 /**
- * Follows the allocation-principles page. The three rules stay; the
- * frame opens to every country so the Pacific can be read against the world.
- * Values are dummy until the country panel is joined.
+ * Follows the allocation-principles page. The three rules stay; the frame opens
+ * to every country so the Pacific can be read against the world.
+ *
+ * The x axis is switchable. Exposure is the argument — the Pacific sits far
+ * right and low, in the way of the harm and overshooting least. GDP per capita
+ * is the control: same countries, sorted by capacity to act instead of exposure
+ * to harm, and the Pacific stops being a cluster.
  */
 export function ScatterScene() {
   return (
@@ -30,7 +38,14 @@ export function ScatterScene() {
 function ScatterView() {
   const reduceMotion = useReducedMotion()
   const [hovered, setHovered] = useState(null)
-  const domains = useMemo(() => scatterDomains(SCATTER_COUNTRIES), [])
+  const [xVarId, setXVarId] = useState('exposure')
+  const { countries, year, loading, error } = useScatterCountries()
+
+  const domains = useMemo(
+    () => scatterDomains(countries, xVarId),
+    [countries, xVarId],
+  )
+  const xVar = X_VAR_BY_ID[xVarId]
 
   return (
     <div className="scatter">
@@ -43,6 +58,20 @@ function ScatterView() {
         </p>
       </div>
 
+      <div className="scatter__controls" role="group" aria-label="Horizontal axis">
+        {X_VARS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            className={`scatter__control${v.id === xVarId ? ' is-active' : ''}`}
+            aria-pressed={v.id === xVarId}
+            onClick={() => setXVarId(v.id)}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
       <div className="scatter__body">
         {SCATTER_PLOTS.map((plot) => (
           <figure key={plot.id} className="scatter-plot">
@@ -51,24 +80,24 @@ function ScatterView() {
               <span className="scatter-plot__rule">{plot.rule}</span>
             </figcaption>
             <div className="scatter-plot__frame">
-              <PacificWorldScatter
-                countries={SCATTER_COUNTRIES}
-                methodId={plot.id}
-                xDomain={domains.xDomain}
-                yDomain={domains.yDomain}
-                hoveredIso={hovered?.iso ?? null}
-                onHover={setHovered}
-              />
+              {countries.length ? (
+                <PacificWorldScatter
+                  countries={countries}
+                  methodId={plot.id}
+                  xVarId={xVarId}
+                  xDomain={domains.xDomain}
+                  yDomain={domains.yDomain}
+                  hoveredIso={hovered?.iso ?? null}
+                  onHover={setHovered}
+                />
+              ) : null}
             </div>
           </figure>
         ))}
       </div>
 
       <div className="scatter__legend">
-        <p className="scatter__legend-lead">
-          Shared log axes: GDP per capita and ASR. The dashed line is a
-          fair share of 1.
-        </p>
+        <p className="scatter__legend-lead">{xVar.lede}</p>
         <ul className="scatter__legend-keys">
           <li>
             <span className="scatter__legend-swatch scatter__legend-swatch--pacific" aria-hidden="true" />
@@ -79,9 +108,18 @@ function ScatterView() {
             Rest of the world
           </li>
         </ul>
-        {SCATTER_IS_DUMMY ? (
-          <p className="scatter__dummy">Dummy numbers — the cloud is a stand-in.</p>
-        ) : null}
+        <p className="scatter__source">
+          {loading ? 'Loading…' : null}
+          {error ? 'Country panel unavailable.' : null}
+          {!loading && !error && year ? (
+            <>
+              {year}. ASR on a log axis; the dashed line is a fair share of 1.
+              Exposure from the ND-GAIN Country Index, GDP per capita from the
+              World Bank. New Caledonia and French Polynesia have an ASR but
+              appear in neither source, so they are absent here.
+            </>
+          ) : null}
+        </p>
       </div>
 
       <AnimatePresence>
@@ -96,7 +134,13 @@ function ScatterView() {
             transition={FADE}
           >
             <strong>{hovered.name}</strong>
-            <span>{hovered.pacific ? 'Pacific' : 'World'} · {formatGdp(hovered.gdp)}</span>
+            <span>
+              {hovered.pacific ? 'Pacific' : 'World'}
+              {' · '}
+              exposure {hovered.exposure == null ? '—' : formatExposure(hovered.exposure)}
+              {' · '}
+              {hovered.gdp == null ? '—' : formatGdp(hovered.gdp)}
+            </span>
             <span>
               {SCATTER_PLOTS.map((plot) => {
                 const value = asrOf(hovered, plot.id)

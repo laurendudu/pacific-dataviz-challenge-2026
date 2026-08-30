@@ -1,50 +1,55 @@
 import { useMemo } from 'react'
-import { extent, max } from 'd3-array'
+import { extent, max, min } from 'd3-array'
 import { Delaunay } from 'd3-delaunay'
-import { format } from 'd3-format'
-import { scaleLog } from 'd3-scale'
-import { asrOf } from '../../data/scatter'
+import { scaleLinear, scaleLog } from 'd3-scale'
+import { X_VAR_BY_ID, asrOf, formatAsr, xOf } from '../../data/scatter'
 import { AxisBottom, AxisLeft } from './Axis'
 import { ChartFrame } from './ChartFrame'
 
-const MARGIN = { top: 12, right: 12, bottom: 44, left: 40 }
+const MARGIN = { top: 12, right: 12, bottom: 52, left: 40 }
 const WORLD_R = 3.2
 const PACIFIC_R = 5
 const HIT_R = 28
 
-const formatGdp = format('$.2~s')
-const formatAsr = format('.2~f')
-
 const WORLD_FILL = '#a8b2b8'
 const PACIFIC_FILL = 'var(--pacific)'
 
+const SCALE_BY_ID = { linear: scaleLinear, log: scaleLog }
+
 /**
- * One GDP × ASR scatter. D3 builds scales, ticks and the hit index;
- * React draws the SVG. Pacific dots sit on top of the world cloud.
+ * One x × ASR scatter. D3 builds scales, ticks and the hit index; React draws
+ * the SVG. Pacific dots sit on top of the world cloud.
+ *
+ * `xVarId` picks the x axis: 'vuln' for ND-GAIN climate vulnerability, 'gdp'
+ * for GDP per capita. The y axis is always the ASR under `methodId`.
  */
 export function PacificWorldScatter({
   countries,
   methodId,
+  xVarId,
   xDomain,
   yDomain,
   hoveredIso,
   onHover,
 }) {
+  const xVar = X_VAR_BY_ID[xVarId]
+
   const points = useMemo(
-    () => countries.filter((c) => Number.isFinite(c.gdp) && asrOf(c, methodId) != null),
-    [countries, methodId],
+    () => countries.filter((c) => xOf(c, xVarId) != null && asrOf(c, methodId) != null),
+    [countries, xVarId, methodId],
   )
 
   return (
     <ChartFrame
       margin={MARGIN}
-      title={`GDP per capita against ${methodId} Absolute Sustainability Ratio`}
+      title={`${xVar.axisLabel} against ${methodId} Absolute Sustainability Ratio`}
       desc="Each circle is a country. Pacific territories are the larger teal marks."
     >
       {(dms) => (
         <ScatterMarks
           points={points}
           methodId={methodId}
+          xVar={xVar}
           xDomain={xDomain}
           yDomain={yDomain}
           hoveredIso={hoveredIso}
@@ -60,6 +65,7 @@ export function PacificWorldScatter({
 function ScatterMarks({
   points,
   methodId,
+  xVar,
   xDomain,
   yDomain,
   hoveredIso,
@@ -68,22 +74,30 @@ function ScatterMarks({
   height,
 }) {
   const x = useMemo(
-    () => scaleLog().domain(xDomain).range([0, width]).clamp(true),
-    [xDomain, width],
+    () => SCALE_BY_ID[xVar.scale]().domain(xDomain).range([0, width]).clamp(true),
+    [xVar, xDomain, width],
   )
   const y = useMemo(
     () => scaleLog().domain(yDomain).range([height, 0]).clamp(true),
     [yDomain, height],
   )
 
+  /* Powers of ten only. d3's log scale returns its minor ticks whenever the
+     domain is narrower than the requested count, which on GDP per capita is
+     two dozen labels along a 340px axis. */
+  const xTicks = useMemo(() => {
+    if (xVar.scale !== 'log') return undefined
+    return x.ticks().filter((t) => Number.isInteger(Math.log10(t)))
+  }, [xVar, x])
+
   const placed = useMemo(
     () => points.map((c) => ({
       ...c,
       value: asrOf(c, methodId),
-      cx: x(c.gdp),
+      cx: x(xOf(c, xVar.id)),
       cy: y(asrOf(c, methodId)),
     })),
-    [points, methodId, x, y],
+    [points, methodId, xVar, x, y],
   )
 
   const world = placed.filter((c) => !c.pacific)
@@ -124,10 +138,18 @@ function ScatterMarks({
       <AxisBottom
         scale={x}
         y={height}
+        ticks={xTicks}
         tickCount={4}
-        tickFormat={formatGdp}
-        label="GDP per capita"
+        tickFormat={xVar.format}
+        label={xVar.axisLabel}
       />
+
+      {/* Which way the axis reads. Neither variable is self-evidently
+          directional, and 'more vulnerable to the right' is the whole point. */}
+      <g className="scatter-marks__ends" pointerEvents="none">
+        <text x={0} y={height + 46} textAnchor="start">← {xVar.ends[0]}</text>
+        <text x={width} y={height + 46} textAnchor="end">{xVar.ends[1]} →</text>
+      </g>
 
       {fairY >= 0 && fairY <= height ? (
         <g className="scatter-marks__fair" pointerEvents="none">
@@ -182,16 +204,29 @@ function ScatterMarks({
   )
 }
 
-export function scatterDomains(countries) {
-  const gdps = countries.map((c) => c.gdp).filter(Number.isFinite)
+/**
+ * Shared domains, so the three rule panels can be read against each other.
+ *
+ * The x domain is padded rather than snapped to zero: ND-GAIN scores the whole
+ * world inside 0.26-0.66, and anchoring that at 0 would squeeze every country
+ * into the right-hand third of the frame.
+ */
+export function scatterDomains(countries, xVarId) {
+  const xs = countries.map((c) => xOf(c, xVarId)).filter((v) => v != null)
   const asrs = countries.flatMap((c) => (
-    Object.values(c.asr).filter((v) => Number.isFinite(v))
+    Object.values(c.asr ?? {}).filter((v) => Number.isFinite(v))
   ))
-  const [x0, x1] = extent(gdps)
+
+  if (!xs.length || !asrs.length) return { xDomain: [0, 1], yDomain: [0.1, 10] }
+
+  const [x0, x1] = extent(xs)
+  const xVar = X_VAR_BY_ID[xVarId]
+  const xDomain = xVar.scale === 'log'
+    ? [Math.max(400, x0 * 0.85), x1 * 1.1]
+    : [x0 - (x1 - x0) * 0.06, x1 + (x1 - x0) * 0.06]
+
   return {
-    xDomain: [Math.max(400, x0 * 0.85), x1 * 1.1],
-    yDomain: [0.08, max(asrs) * 1.15],
+    xDomain,
+    yDomain: [min(asrs) * 0.85, max(asrs) * 1.15],
   }
 }
-
-export { formatGdp, formatAsr }
