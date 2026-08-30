@@ -59,7 +59,7 @@ export default function App() {
  */
 function ShellSidebar({ globeProgress, frozen }) {
   const asideRef = useRef(null)
-  const { visible, activeId } = useChartTimeline({ globeProgress, frozen })
+  const { visible, activeId, revealedCount } = useChartTimeline({ globeProgress, frozen })
   const [revealed, setRevealed] = useState(() => getSidebarReveal() > 0.5)
 
   useEffect(() => {
@@ -84,7 +84,12 @@ function ShellSidebar({ globeProgress, frozen }) {
       className="app-shell__sidebar"
       aria-hidden={!revealed}
     >
-      <Timeline visible={revealed} activeId={activeId} frozen={frozen} />
+      <Timeline
+        visible={revealed}
+        activeId={activeId}
+        revealedCount={revealedCount}
+        frozen={frozen}
+      />
     </aside>
   )
 }

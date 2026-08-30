@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useReducedMotion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 import {
   PACIFIC_ZOOM_PROGRESS,
   openingMorphDone,
@@ -34,7 +34,7 @@ export const CHARTS = [
   },
   {
     id: 'ranking',
-    label: 'Ranking the Pacific and the world',
+    label: 'Who\'s best in class?',
     target: { type: 'hash', id: 'ranking' },
   },
   {
@@ -101,6 +101,28 @@ function scrollToSection(id, instant, progress) {
   })
 }
 
+function readActiveChartId() {
+  if (sectionIsActive('asr')) return 'asr'
+  if (sectionIsActive('allocation-map')) return 'allocation-map'
+  if (sectionIsActive('palau')) return 'palau'
+  if (sectionIsActive('pacific-vs-world')) return 'pacific-vs-world'
+  if (sectionIsActive('ranking')) return 'ranking'
+  if (sectionIsActive('allocation')) return 'allocation'
+  if (sectionProgress('budget') > 0.42) return 'global-asr'
+  if (sectionIsActive('budget')) return 'budget'
+  return 'pacific-ghg'
+}
+
+function chartIndex(id) {
+  const i = CHARTS.findIndex((c) => c.id === id)
+  return i < 0 ? 0 : i
+}
+
+const ITEM_ENTER = {
+  duration: 0.4,
+  ease: [0.4, 0, 0.2, 1],
+}
+
 function goToChart(chart, { frozen, instant }) {
   if (frozen) {
     const url = new URL(window.location.href)
@@ -127,23 +149,20 @@ export function useChartTimeline({ globeProgress = null, frozen = false } = {}) 
   const [visible, setVisible] = useState(
     () => getOpeningGate() || (globeProgress != null && openingMorphDone(globeProgress)),
   )
-  const [activeId, setActiveId] = useState(CHARTS[0].id)
+  const [activeId, setActiveId] = useState(() => readActiveChartId())
+  /* Grows only — scrolling back must not hide a milestone already earned. */
+  const [revealedCount, setRevealedCount] = useState(
+    () => chartIndex(readActiveChartId()) + 1,
+  )
 
   useEffect(() => subscribeOpeningGate(setVisible), [])
 
   useEffect(() => {
     const read = () => {
-      setActiveId(
-        sectionIsActive('asr') ? 'asr'
-          : sectionIsActive('allocation-map') ? 'allocation-map'
-          : sectionIsActive('palau') ? 'palau'
-          : sectionIsActive('pacific-vs-world') ? 'pacific-vs-world'
-          : sectionIsActive('ranking') ? 'ranking'
-          : sectionIsActive('allocation') ? 'allocation'
-            : sectionProgress('budget') > 0.42 ? 'global-asr'
-              : sectionIsActive('budget') ? 'budget'
-                : 'pacific-ghg',
-      )
+      const id = readActiveChartId()
+      setActiveId((was) => (was === id ? was : id))
+      const next = chartIndex(id) + 1
+      setRevealedCount((n) => (next > n ? next : n))
     }
 
     if (frozen) {
@@ -170,12 +189,24 @@ export function useChartTimeline({ globeProgress = null, frozen = false } = {}) 
     }
   }, [frozen])
 
-  return { visible, activeId }
+  return { visible, activeId, revealedCount }
 }
 
-export function Timeline({ visible, activeId, frozen = false }) {
+export function Timeline({
+  visible,
+  activeId,
+  revealedCount = 1,
+  frozen = false,
+}) {
   const reduceMotion = useReducedMotion()
   const instant = !!reduceMotion
+  const shown = CHARTS.slice(0, Math.max(1, Math.min(revealedCount, CHARTS.length)))
+  /* Deep-link / refresh already past the first beat: paint the earned list
+     without a stacked enter. Later beats still fade in. */
+  const skipEnter = useRef(shown.length > 1)
+  useEffect(() => {
+    skipEnter.current = false
+  }, [])
 
   /* Always mounted — the shell panel itself slides in. Remounting via
      AnimatePresence during the handoff competed with the globe for frames. */
@@ -186,10 +217,17 @@ export function Timeline({ visible, activeId, frozen = false }) {
       aria-hidden={!visible}
     >
       <ol className="chart-timeline__list">
-        {CHARTS.map((chart) => {
+        {shown.map((chart, i) => {
           const active = chart.id === activeId
           return (
-            <li key={chart.id} className="chart-timeline__item">
+            <motion.li
+              key={chart.id}
+              className="chart-timeline__item"
+              layout={!reduceMotion}
+              initial={reduceMotion || skipEnter.current || i === 0 ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={ITEM_ENTER}
+            >
               <button
                 type="button"
                 className={`chart-timeline__btn${active ? ' is-active' : ''}`}
@@ -200,7 +238,7 @@ export function Timeline({ visible, activeId, frozen = false }) {
                 <span className="chart-timeline__dot" aria-hidden="true" />
                 <span className="chart-timeline__label">{chart.label}</span>
               </button>
-            </li>
+            </motion.li>
           )
         })}
       </ol>
