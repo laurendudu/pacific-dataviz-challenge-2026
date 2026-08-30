@@ -68,7 +68,7 @@
 
   --step--1: clamp(0.8125rem, 0.78rem + 0.18vw, 0.875rem); /* 13–14px */
   --step-0:  clamp(1.0625rem, 1rem + 0.28vw, 1.1875rem);   /* 17–19px */
-  --step-1:  clamp(1.35rem, 1.22rem + 0.55vw, 1.65rem);    /* 21.6–26.4px */
+  --step-1:  clamp(1.2rem, 1.1rem + 0.4vw, 1.45rem);       /* 19.2–23.2px */
   --step-2:  clamp(2rem, 1.55rem + 1.7vw, 3.2rem);
   --step-3:  clamp(2.6rem, 1.9rem + 3.2vw, 5.25rem);
 
@@ -79,7 +79,9 @@
   --space-l:  3.5rem;
   --space-xl: 6.5rem;
 
-  --scene-pad-top: clamp(4.5rem, 11svh, 6.75rem);
+  /* Matched scene insets — captions sit high, closing lines sit on the floor. */
+  --scene-pad-top: clamp(1.65rem, 3.5svh, 2.35rem);
+  --scene-pad-bottom: clamp(1.5rem, 3.25svh, 2.15rem);
   --scene-pad-x: clamp(1.75rem, 4.5vw, 4rem);
 
   --measure: 36rem;
