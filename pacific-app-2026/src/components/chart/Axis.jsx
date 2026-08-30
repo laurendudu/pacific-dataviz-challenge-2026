@@ -4,8 +4,13 @@
  * function; React draws every line and label.
  */
 
-export function AxisBottom({ scale, y, tickCount = 5, tickFormat = String, label }) {
-  const ticks = getTicks(scale, tickCount)
+/**
+ * `ticks` overrides the values entirely. A log scale spanning only two or three
+ * decades ignores its tick count and returns every minor tick, so callers that
+ * need a thinner set have to supply it.
+ */
+export function AxisBottom({ scale, y, ticks: fixedTicks, tickCount = 5, tickFormat = String, label }) {
+  const ticks = fixedTicks ?? getTicks(scale, tickCount)
   const [x0, x1] = rangeExtent(scale)
 
   return (
