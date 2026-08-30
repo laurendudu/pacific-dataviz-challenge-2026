@@ -12,7 +12,11 @@ ROOT = Path(__file__).resolve().parent
 # country set.
 PROJECT = "asr"
 
-# Analysis window, bounded by SPC Pacific Data Hub coverage.
+# Analysis window. 2023 is a deliberate cut-off, not a data limit: as of
+# 2026-08 the SPC Pacific Data Hub, OWID and the World Bank all publish 2024.
+# Extending means range(2000, 2025) and re-running notebooks 02, 03 and 04.
+# Note SPC reports the Marshall Islands and Nauru at a flat 0.1 t every year,
+# so a new year there is likely carried forward rather than freshly measured.
 YEARS = range(2000, 2024)
 YEAR_COLS = [str(y) for y in YEARS]
 
@@ -34,27 +38,92 @@ LCA_FILE = (
 FU_CODE = "L1.b"
 REGION_COL = "r_p"
 
-# Remaining IPCC AR6 carbon budget for <1.5C with no/limited overshoot (C1),
-# rather than a fixed annual planetary-boundary allocation. The budget
-# shrinks as the world emits, which is what "fair share of the carbon
-# budget" means in climate policy — and C1 is the 1.5C pathway Pacific
-# nations themselves campaign for ("1.5 to stay alive").
-CC_CATEGORY = ["C1"]
-
-# C1 covers 12 AR6 model/policy runs, not one number. We report a single
-# reference run rather than a median across scenarios pyaesa cannot label:
-# MESSAGEix-GLOBIOM's "National Policies Implemented (2020)" pathway
-# targeting ~500 ppm CO2-eq — the middle of the three core 450/500/600
-# targets in that model family, and not one of the COVID-response variants
-# (COV_GreenPush, COV_Restore...) that make up the other half of C1.
-CC_SCENARIO = "EN_NPi2020_500"
+# Static (steady-state) climate carrying capacity, not the dynamic AR6 pathway.
+#
+# The dynamic AR6 budget is built for prospective studies: it front-loads the
+# allowance and places the reductions after the study window. Against it the
+# world sits at 1.17x its 2023 allowance — near compliant — which says nothing
+# useful about a historical snapshot. The static carrying capacity is a fixed
+# annual safe level, and against it the world emits 6.4x what it may.
+#
+# pyaesa ships the value in data_raw/carrying_capacities/gwp100_lcia_cc_steady_state.csv:
+#
+#     min_cc = 6.81e12 kg CO2-eq/yr   = 6.81 GtCO2eq/yr
+#     max_cc = 8.72e12 kg CO2-eq/yr   = 128% of min_cc
+#
+# min_cc is the **2 C** steady-state budget of Bjorn & Hauschild (2015),
+# assuming that emission level held over an infinite time period. Stated
+# explicitly in de Bantel et al., "UNCASExt" (arXiv:2606.21465), Fig. 2:
+# "The static steady-state approach (2 C of global warming by 2100) is shown
+# with an annual budget of 6.81 GtCO2eq/yr according to [Bjorn and Hauschild,
+# 2015], assuming an infinite time period."
+#
+# The file's own comment mentions "450 ppm / 350 ppm since Steffen et al.,
+# 2015". That is ONLY the source of the 128% ratio used to set max_cc
+# (450/350 = 1.286; 8.72/6.81 = 1.281). It does NOT mean min_cc is the 350 ppm
+# planetary-boundary level. An earlier version of this file said it did; that
+# was a misreading.
+#
+# The strict planetary-boundary value is a different, tighter number (~1.06 C,
+# the PB framework level). It is not in pyaesa's gwp100 table: the PB framework
+# defines climate by *state* variables — atmospheric CO2 in ppm, energy
+# imbalance in W/m2 — which is why pyaesa carries them separately in
+# pb_lcia_cc_steady_state.csv and cannot use them as a kg CO2-eq/yr flow.
+# Getting a 1.06 C annual budget means taking it from Bjorn & Hauschild (2015)
+# Appendix C and overriding min_cc by hand.
+#
+# So: describe results as measured against a 2 C steady-state carrying
+# capacity, NOT as a planetary-boundary or 1.5 C budget.
+CC_BOUND = "min_cc"
 
 # ASR results, written by pyaesa under the equal-per-capita allocation.
 ASR_FILE = (
     ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
-    / f"dynamic_ar6_{LCIA_METHOD}" / "results"
-    / f"l1_EG(Pop)__{LCIA_METHOD}_dynamic_ar6.csv"
+    / f"static_{LCIA_METHOD}" / "results" / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
 )
+
+# Same file for the prioritarian allocation.
+ASR_FILE_GDP = (
+    ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
+    / f"static_{LCIA_METHOD}" / "results" / f"l1_PR(GDPcap)__{LCIA_METHOD}.csv"
+)
+
+# The allocated carrying capacity under equal per capita, in kg CO2-eq. Summed
+# back over the 198 countries it gives the budget pool the allocation rules
+# divide, which is what the grandfathering rule below is normalised against.
+ACC_FILE = (
+    ROOT / PROJECT / "B2_acc" / "iso3" / "deterministic"
+    / f"static_{LCIA_METHOD}" / "results" / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
+)
+
+# Reference year for the grandfathering allocation, computed in notebook 03.
+#
+# pyaesa knows this rule as AR(E) — acquired rights — and defines it as each
+# country's share of world emissions in one fixed reference year. It will not
+# compute it here: source="iso3" is gated to EG(Pop) and PR(GDPcap) only
+# (asocc/orchestration/setup/request/selection.py), because the six AR/PR-HR
+# methods all need LCIA-resolved MRIO impacts that a country-level emissions
+# table does not carry. The equation itself needs nothing but emissions, so
+# notebook 03 applies it directly.
+#
+# Deliberately set to the window's *last* year, not its first. The choice is
+# load-bearing and the collapse is the point: when the reference year is the
+# displayed year the E_i,base in the share cancels the E_i,t in the numerator,
+# so every country lands on the same ratio — the world's own ASR that year
+# (6.3621 in 2023) — and the map goes flat.
+#
+# That flat panel is the argument. Grandfathering-from-today declares all 198
+# countries equally in overshoot while handing the US 2.6 t/person of
+# entitlement and the Marshall Islands 16 kg. The ratio hides the gap the rule
+# creates; the following scenes show it.
+#
+# Set this back to min(YEARS) to recover the drift-since-2000 reading, where
+# the spread is each country's emissions growth relative to the world's.
+GF_BASE_YEAR = max(YEARS)
+
+# The shipped carrying-capacity table, read directly for reporting the
+# per-person fair share.
+CC_FILE = ROOT / "data_raw" / "carrying_capacities" / f"{LCIA_METHOD}_cc_steady_state.csv"
 
 # Reference tables pyaesa downloads and processes in notebook 01.
 WB_POP = ROOT / "data_processed" / "pop_gdp" / "wb_processed.csv"
