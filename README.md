@@ -86,11 +86,14 @@ Run the notebooks in order. Each writes what the next one reads.
 | `03_asr.ipynb` | Computes the ASR | `data_viz/asr.json`, `asr_gdp.json`, `asr_gf.json`, `asr.csv`, `variables.csv` |
 | `04_contributions.ipynb` | Each country's share of 2023 world emissions, and the Pacific bloc's | `data_viz/contributions.json`, `contributions.csv` |
 | `05_tourism.ipynb` | Tourist arrivals per resident for every Pacific island, and the 2019 world ranking | `data_viz/tourism.csv`, `tourism.json` |
+| `06_energy.ipynb` | Oil-fired share of electricity and electricity per resident, Pacific against the world | `data_viz/energy.csv`, `energy.json` |
+| `07_exposure.ipynb` | Joins ND-GAIN climate exposure and World Bank GDP per capita onto the ASR panel | `data_viz/scatter.json` |
 
 Notebook 01 downloads ~210 MB of AR6 scenarios and takes a while. Notebook 02 is
 quick; notebook 03 runs the full allocation chain and takes roughly 20 minutes;
-notebook 04 only re-reads what 02 wrote and runs in seconds; notebook 05 is
-independent of the ASR chain and runs in seconds. All five are safe to re-run.
+notebook 04 only re-reads what 02 wrote and runs in seconds; notebooks 05 and
+06 are independent of the ASR chain and run in seconds; notebook 07 downloads
+4.7 MB and runs in seconds. All seven are safe to re-run.
 
 If pyaesa refuses to start because the country set changed, clear the computed
 phases and keep notebook 02's output:
@@ -110,8 +113,8 @@ Shared settings — paths, the year window, the Pacific country list — live in
 All open data.
 
 - **[SPC Pacific Data Hub](https://stats.pacificdata.org/)** — GHG emissions per
-  capita for Pacific islands, plus tourist arrivals and mid-year population
-  estimates for all 22 PICTs, via SDMX
+  capita for Pacific islands, plus tourist arrivals, electricity generation by
+  source, and mid-year population estimates for all 22 PICTs, via SDMX
 - **[Our World in Data](https://github.com/owid/co2-data)** — GHG emissions for
   every other country, wrapping EDGAR and the Global Carbon Project
 - **IPCC AR6 scenario database** and **World Bank** population and GDP (PPP,
@@ -120,6 +123,22 @@ All open data.
 - **[World Bank `ST.INT.ARVL`](https://data.worldbank.org/indicator/ST.INT.ARVL)**
   — international tourist arrivals for the rest of the world, read straight from
   the World Bank API and used only for the 2019 ranking in notebook 05
+- **[ND-GAIN Country Index](https://gain.nd.edu/our-work/country-index/download-data/)**
+  (University of Notre Dame, open Creative Commons) — the climate **exposure**
+  score on the scatter's x axis, 192 countries at 2023. Chosen over INFORM Risk
+  and the WorldRiskIndex because those score absolute humanitarian impact and so
+  weight by population: both rank Tuvalu among the world's *safest* countries,
+  which would draw the Pacific the wrong way round. Exposure rather than
+  ND-GAIN's headline vulnerability score because the composite folds in
+  sensitivity and adaptive capacity, which are development indicators — it
+  correlates -0.83 with log GDP per capita against exposure's -0.50, so a chart
+  built on it plots poverty and calls it climate. On exposure Tuvalu ranks 2nd
+  of 192 behind the Maldives, and six Pacific islands sit in the global top 20
+- **[OWID energy dataset](https://github.com/owid/energy-data)** and the World
+  Bank's `EG.ELC.FOSL.ZS` / `EG.FEC.RNEW.ZS` — electricity mix and renewable
+  share for the rest of the world in notebook 06. The World Bank's fossil share
+  agrees with SPC's generation data to 0.03 points at the median across 330
+  island-years, which is what lets the two sit in one ranking
 
 Both sources are read as **all greenhouse gases in CO₂-eq excluding land use**
 (OWID's `total_ghg_excluding_lucf`) — every Kyoto gas, not CO₂ alone, which is
