@@ -2,7 +2,14 @@
 __pycache__
 memory
 PLAN.md
-data_viz/
+# Notebook outputs. The four tables the app fetches at runtime are tracked:
+# pacific-app-2026/public/data symlinks here, so they must be in the repo for
+# the Pages build to emit dist/data.
+data_viz/*
+!data_viz/asr.json
+!data_viz/asr_gf.json
+!data_viz/asr_gdp.json
+!data_viz/contributions.json
 
 # pyaesa workspace — downloaded and computed, rebuilt by the notebooks
 data_raw/
