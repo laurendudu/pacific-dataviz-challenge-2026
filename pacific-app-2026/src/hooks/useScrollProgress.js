@@ -39,12 +39,14 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
     let current = target()
     progressRef.current = current
     let frame = 0
-    let running = false
     let lastPublish = 0
 
     const loop = (now) => {
       const to = target()
-      current = rigid ? to : current + (to - current) * smooth
+      /* Big gaps (programmatic jumps while the main thread was busy) catch up
+         faster so the title/photo do not stay stuck on a stale progress. */
+      const blend = rigid ? 1 : Math.abs(to - current) > 0.12 ? Math.min(1, smooth * 4) : smooth
+      current = current + (to - current) * blend
       const settled = Math.abs(to - current) < 0.0002
       if (settled) current = to
       progressRef.current = current
@@ -57,7 +59,6 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
       }
 
       if (settled) {
-        running = false
         frame = 0
         return
       }
@@ -65,19 +66,28 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
     }
 
     const kick = () => {
-      if (running) return
-      running = true
+      if (frame) return
       frame = requestAnimationFrame(loop)
+    }
+
+    /* If scrollTo(0) lands on an already-zero scrollY, no scroll event fires
+       and a lagged progressRef would stick — poll while the tab is visible. */
+    let watch = 0
+    const watchKick = () => {
+      if (Math.abs(target() - progressRef.current) > 0.0005) kick()
+      watch = window.setTimeout(watchKick, 160)
     }
 
     window.addEventListener('scroll', kick, { passive: true })
     window.addEventListener('resize', kick)
     kick()
+    watch = window.setTimeout(watchKick, 160)
 
     return () => {
       window.removeEventListener('scroll', kick)
       window.removeEventListener('resize', kick)
       if (frame) cancelAnimationFrame(frame)
+      if (watch) window.clearTimeout(watch)
     }
   }, [smooth])
 
@@ -88,6 +98,18 @@ export const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 
 /** Remap a slice of progress onto 0→1. slice(p, 0.2, 0.5) → 0 below 20%, 1 at 50%. */
 export const slice = (p, start, end) => clamp((p - start) / (end - start), 0, 1)
+
+/** Fraction of a caption window used to fade in, and again to fade out. */
+export const BEAT_FADE = 0.14
+
+/** Linear in/out envelope for a caption and anything that must match it. */
+export function beatOpacity(progress, from, to) {
+  const fade = BEAT_FADE * (to - from)
+  return Math.min(
+    slice(progress, from, from + fade),
+    1 - slice(progress, to - fade, to),
+  )
+}
 
 /** Decelerate into place. */
 export const easeOut = (t) => 1 - Math.pow(1 - t, 3)

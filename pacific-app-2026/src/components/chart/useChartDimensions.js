@@ -18,13 +18,24 @@ export function useChartDimensions(margin) {
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect
+
+    const apply = (width, height) => {
+      if (!width || !height) return
       setSize((prev) =>
         prev.width === width && prev.height === height ? prev : { width, height },
       )
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      apply(entry.contentRect.width, entry.contentRect.height)
     })
     observer.observe(el)
+
+    /* First paint can miss the observer callback under sticky / contain;
+       measure once synchronously so the globe never sticks at 0×0. */
+    const rect = el.getBoundingClientRect()
+    apply(rect.width, rect.height)
+
     return () => observer.disconnect()
   }, [])
 
