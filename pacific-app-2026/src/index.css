@@ -871,6 +871,9 @@ svg { display: block; }
     0 0 10px var(--paper),
     0 1px 0 var(--paper);
 }
+.swarm-eq__ask--side {
+  text-align: left;
+}
 .swarm-eq__ask-line {
   stroke: var(--ink-secondary);
   stroke-width: 1;
@@ -885,6 +888,9 @@ svg { display: block; }
   position: relative;
   z-index: 3;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0.4rem 0 0;
   padding-inline: var(--scene-pad-x);
   max-width: none;
@@ -894,6 +900,14 @@ svg { display: block; }
   line-height: 1.45;
   color: var(--ink-secondary);
   pointer-events: none;
+}
+.swarm__unit-dot {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #c5ccd3;
+  box-shadow: 0 0 0 0.6px #9aa3ab;
 }
 
 @media (max-width: 40rem) {
@@ -1057,6 +1071,7 @@ svg { display: block; }
   line-height: 1.45;
   color: var(--ink-secondary);
   pointer-events: none;
+  transition: opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .alloc__legend-keys {
   display: flex;
@@ -2581,8 +2596,17 @@ svg { display: block; }
   fill-opacity: 0.15;
   stroke: none;
 }
+.alluvial-world rect {
+  fill: var(--world);
+  fill-opacity: 0.28;
+  stroke: var(--paper);
+  stroke-width: 0.35;
+}
 .alluvial-world.is-dim path {
   fill-opacity: 0.045;
+}
+.alluvial-world.is-dim rect {
+  fill-opacity: 0.08;
 }
 .alluvial-flow--other path,
 .alluvial-flow--other rect {

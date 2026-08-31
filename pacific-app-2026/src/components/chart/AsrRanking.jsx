@@ -4,7 +4,7 @@ import { scaleLinear } from 'd3-scale'
 import { motion, useReducedMotion } from 'motion/react'
 import { asrCutoffRank } from '../../data/asrCutoff'
 import { ChartFrame } from './ChartFrame'
-import { layoutAlluvial, layoutSpine, MIN_H, NODE_W } from './alluvialLayout'
+import { layoutAlluvial, layoutSpine, packedCutoffY, MIN_H, NODE_W } from './alluvialLayout'
 
 const MARGIN = { top: 52, right: 200, bottom: 20, left: 136 }
 const COMPACT_MARGIN = { top: 56, right: 16, bottom: 16, left: 100 }
@@ -127,8 +127,8 @@ function RankingMarks({
   }, [rows.items, x, y, lastCol])
 
   const fat = useMemo(
-    () => layoutAlluvial(rows.items, x, y, height),
-    [rows.items, x, y, height],
+    () => layoutAlluvial(rows.items, x, height),
+    [rows.items, x, height],
   )
   const spine = useMemo(
     () => layoutSpine(rows.items, x, y),
@@ -151,17 +151,25 @@ function RankingMarks({
       : placeLabels(labelled, lastCol, y, height)
   }, [labelled, lastCol, y, height, livePr, volume, fat.byIso])
 
-  const cutoffs = useMemo(
-    () => columns.map((_, i) => asrCutoffRank(cutoffSource, i, 1)),
-    [columns, cutoffSource],
-  )
-  const cutoff100 = useMemo(
-    () => asrCutoffRank(cutoffSource, lastCol, 100, {
+  const cutoffYs = useMemo(() => {
+    if (volume) {
+      return columns.map((_, i) => packedCutoffY(fat.byIso[i], 1))
+    }
+    return columns.map((_, i) => {
+      const rank = asrCutoffRank(cutoffSource, i, 1)
+      return rank == null ? null : y(rank)
+    })
+  }, [volume, columns, fat.byIso, cutoffSource, y])
+  const cutoff100Y = useMemo(() => {
+    if (volume) {
+      return packedCutoffY(fat.byIso[lastCol], 100, { fallback: 'end' })
+    }
+    const rank = asrCutoffRank(cutoffSource, lastCol, 100, {
       fallback: 'end',
       maxRank: rows.maxRank,
-    }),
-    [lastCol, cutoffSource, rows.maxRank],
-  )
+    })
+    return rank == null ? null : y(rank)
+  }, [volume, fat.byIso, lastCol, cutoffSource, rows.maxRank, y])
 
   const hits = useMemo(() => {
     const pts = []
@@ -266,9 +274,13 @@ function RankingMarks({
       <g className="rank__axis" pointerEvents="none">
         <text x={-6} y={-28} textAnchor="end">Rank</text>
         <ExtentNote y={0} label="lowest ASR" compact={compact} />
-        <text x={-6} y={0} dy="0.32em" textAnchor="end">1</text>
+        {volume ? null : (
+          <text x={-6} y={0} dy="0.32em" textAnchor="end">1</text>
+        )}
         <ExtentNote y={height} label="highest ASR" compact={compact} />
-        <text x={-6} y={height} dy="0.32em" textAnchor="end">{rows.maxRank}</text>
+        {volume ? null : (
+          <text x={-6} y={height} dy="0.32em" textAnchor="end">{rows.maxRank}</text>
+        )}
       </g>
 
       <g clipPath={`url(#${clipId})`}>
@@ -293,7 +305,23 @@ function RankingMarks({
           <g className={`alluvial-world${dim ? ' is-dim' : ''}`}>
             {worldGreys.map((row) => {
               const fatRow = fatByIso.get(row.iso)
-              return fatRow?.ribbon ? <path key={row.iso} d={fatRow.ribbon} /> : null
+              if (!fatRow) return null
+              return (
+                <g key={row.iso}>
+                  {fatRow.ribbon ? <path d={fatRow.ribbon} /> : null}
+                  {fatRow.nodes.map((node, i) => (
+                    node && i <= lastLive ? (
+                      <rect
+                        key={i}
+                        x={node.x0}
+                        y={node.y0}
+                        width={NODE_W}
+                        height={Math.max(0.4, node.y1 - node.y0)}
+                      />
+                    ) : null
+                  ))}
+                </g>
+              )
             })}
           </g>
         ) : null}
@@ -343,6 +371,7 @@ function RankingMarks({
             fat={fatByIso.get(row.iso)}
             volume={volume}
             dim={dim}
+            lastLive={lastLive}
             transition={morph}
           />
         ))}
@@ -354,6 +383,7 @@ function RankingMarks({
             fat={fatByIso.get(row.iso)}
             volume={volume}
             dim={dim}
+            lastLive={lastLive}
             transition={morph}
           />
         ))}
@@ -490,7 +520,7 @@ function RankingMarks({
         >
           <CutoffMark
             x={x[lastCol]}
-            y={cutoff100 == null ? null : y(cutoff100)}
+            y={cutoff100Y}
             height={height}
             compact={compact}
             anchor="end"
@@ -511,7 +541,7 @@ function RankingMarks({
             >
               <CutoffMark
                 x={x[i]}
-                y={cutoffs[i] == null ? null : y(cutoffs[i])}
+                y={cutoffYs[i]}
                 height={height}
                 compact={compact}
                 anchor={anchor}
@@ -523,9 +553,8 @@ function RankingMarks({
         })}
         <g clipPath={`url(#${clipId})`}>
           <CutoffJoin
-            cutoffs={cutoffs}
+            ys={cutoffYs}
             x={x}
-            y={y}
             height={height}
             kind="one"
             showEg={showEg}
@@ -547,7 +576,7 @@ function RankingMarks({
   )
 }
 
-function MorphRibbon({ group, thin, fat, volume, dim, transition }) {
+function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }) {
   const from = thin?.ribbon || ''
   const to = fat?.ribbon || ''
   const d = volume ? (to || from) : (from || to)
@@ -560,6 +589,19 @@ function MorphRibbon({ group, thin, fat, volume, dim, transition }) {
         animate={{ d, opacity: volume ? 1 : 0 }}
         transition={transition}
       />
+      {volume
+        ? fat?.nodes.map((node, i) => (
+            node && i <= lastLive ? (
+              <rect
+                key={`n-${i}`}
+                x={node.x0}
+                y={node.y0}
+                width={NODE_W}
+                height={Math.max(0.4, node.y1 - node.y0)}
+              />
+            ) : null
+          ))
+        : null}
     </g>
   )
 }
@@ -578,12 +620,12 @@ function CutoffMark({ x, y: py, height, compact, anchor, kind = 'one', label = '
   )
 }
 
-function CutoffJoin({ cutoffs, x, y, height, kind = 'one', showEg, showPr, transition }) {
-  const pts = cutoffs
-    .map((rank, i) => {
+function CutoffJoin({ ys, x, height, kind = 'one', showEg, showPr, transition }) {
+  const pts = ys
+    .map((py, i) => {
       const on = i === 0 || (i === 1 && showEg) || (i === 2 && showPr)
-      if (!on || rank == null) return null
-      return { x: x[i], y: Math.max(0.75, Math.min(height - 1.5, y(rank))) }
+      if (!on || py == null) return null
+      return { x: x[i], y: Math.max(0.75, Math.min(height - 1.5, py)) }
     })
     .filter(Boolean)
   if (pts.length < 2) return null

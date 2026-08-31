@@ -73,7 +73,8 @@ function SwarmView({ beat }) {
       </div>
 
       <p className="swarm__unit">
-        Each dot is {formatDot(DOT_GT)} GtCO₂e · closing the gap means cutting {CUT_PCT}%
+        <span className="swarm__unit-dot" aria-hidden="true" />
+        Each dot is {formatDot(DOT_GT)} GtCO₂e
       </p>
     </div>
   )

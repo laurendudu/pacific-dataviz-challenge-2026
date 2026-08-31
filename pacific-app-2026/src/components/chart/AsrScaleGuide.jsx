@@ -155,14 +155,7 @@ export function AsrScaleGuide({
         <line x1={CX + g.rAsr + 8} y1={CY} x2={RULER_X - 8} y2={CY} />
         <path d={`M${RULER_X - 14},${CY - 4} L${RULER_X - 8},${CY} L${RULER_X - 14},${CY + 4}`} />
       </g>
-      <text
-        className="asr-guide__carry-note"
-        x={(CX + g.rAsr + RULER_X) / 2}
-        y={CY - 52}
-        textAnchor="middle"
-      >
-        the radius, unrolled
-      </text>
+
 
       <g className="asr-guide__bands">
         <rect

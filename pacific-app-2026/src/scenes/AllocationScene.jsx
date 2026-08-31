@@ -4,6 +4,7 @@ import { Scene } from '../components/scroll/Scene'
 import { AllocationPrinciples } from '../components/chart/AllocationPrinciples'
 import { ASR_FILL_OVER, ASR_FILL_UNDER } from '../components/chart/AsrCountry'
 import {
+  ALLOCATION_BEATS,
   PACIFIC_BUDGET_ASK,
   PRINCIPLES,
 } from '../data/allocation'
@@ -17,10 +18,10 @@ const BTN_FADE = {
 }
 
 /**
- * Follows the world-disc scale guide. The swarm leaves a question — how
- * much of the budget belongs to the Pacific — and this page answers it on a
- * Pacific map, naming the three rules one scroll beat at a time. After all
- * three unlock, the same frames are reachable from the toggles.
+ * Follows the world-disc scale guide. Arrival is the Pacific with no
+ * ratios plotted — wells and the ASR = 1 ring only. Scroll names the
+ * three rules one beat at a time. After all three unlock, the same frames
+ * are reachable from the toggles.
  */
 export function AllocationScene() {
   const tables = useAsrTables(YEAR)
@@ -41,26 +42,34 @@ export function AllocationScene() {
   )
 }
 
-/** gf → eg → pr → hold with all toggles live. */
-const ALLOC_BEATS = 4
+/** empty map → gf → eg → pr → hold with all toggles live. */
+const ALLOC_BEATS = ALLOCATION_BEATS.hold + 1
 
 function AllocationView({ beat, tables, rows }) {
   const reduceMotion = useReducedMotion()
   const [picked, setPicked] = useState(null)
 
   const unlocked = {
-    gf: true,
-    eg: beat >= 1,
-    pr: beat >= 2,
+    gf: beat >= ALLOCATION_BEATS.gf,
+    eg: beat >= ALLOCATION_BEATS.eg,
+    pr: beat >= ALLOCATION_BEATS.pr,
   }
-  const allUnlocked = beat >= 3
+  const allUnlocked = beat >= ALLOCATION_BEATS.hold
 
   useEffect(() => {
     if (!allUnlocked) setPicked(null)
   }, [allUnlocked])
 
-  const scrolled = beat === 0 ? 'gf' : beat === 1 ? 'eg' : 'pr'
+  const scrolled =
+    beat <= ALLOCATION_BEATS.empty
+      ? null
+      : beat === ALLOCATION_BEATS.gf
+        ? 'gf'
+        : beat === ALLOCATION_BEATS.eg
+          ? 'eg'
+          : 'pr'
   const methodId = allUnlocked && picked ? picked : scrolled
+  const hasValues = methodId != null
 
   return (
     <div className="alloc alloc--map">
@@ -105,7 +114,7 @@ function AllocationView({ beat, tables, rows }) {
         </AllocationPrinciples>
       </div>
 
-      <div className="alloc__legend">
+      <div className="alloc__legend" style={{ opacity: hasValues ? 1 : 0 }} aria-hidden={!hasValues}>
         <ul className="alloc__legend-keys">
           <li>
             <span

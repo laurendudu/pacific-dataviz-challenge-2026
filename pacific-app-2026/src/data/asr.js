@@ -6,7 +6,8 @@ import { useData } from './useData'
 
 /**
  * Equal-per-capita Absolute Sustainability Ratio at the static min_cc bound
- * (350 ppm planetary boundary). `asr.json` is `{iso3: {year: asr}}`, written
+ * (the 2 °C steady-state carrying capacity — see config.py, not a planetary
+ * boundary). `asr.json` is `{iso3: {year: asr}}`, written
  * by 03_asr.ipynb from pyaesa.deterministic_asr().
  *
  * ASR = territorial GHG / allocated carrying capacity.

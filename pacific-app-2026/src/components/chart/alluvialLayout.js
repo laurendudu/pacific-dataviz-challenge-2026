@@ -5,18 +5,19 @@ export const SPINE_W = 2
 export const SPINE_H = 1.65
 
 const THICK = 3.4
-const TIE_GAP = 1.2
+const PACK_GAP = 1.2
+const MIN_PACK = 0.5
 
 export function thickness(asr) {
   return Math.max(MIN_H, Math.min(MAX_H, THICK * Math.sqrt(Math.max(0, asr))))
 }
 
 /**
- * Place each country at its rank. Ties stack as a block centred on the
- * shared rank. Thickness is ASR (sqrt, clamped). Ribbons join the same
- * iso across columns.
+ * Volume (ASR) layout: pack every visible country in rank order, lowest ASR
+ * at the top, so ribbon thickness cannot overlap. Leftover height becomes
+ * gap; if the stack is too tall, thicknesses scale down together.
  */
-export function layoutAlluvial(items, x, y, height) {
+export function layoutAlluvial(items, x, height) {
   const nCol = x.length
   const byIso = Array.from({ length: nCol }, () => new Map())
 
@@ -26,50 +27,21 @@ export function layoutAlluvial(items, x, y, height) {
       .filter((d) => d.rank != null && Number.isFinite(d.asr) && d.asr >= 0)
       .sort((a, b) => a.rank - b.rank || a.item.iso.localeCompare(b.item.iso))
 
-    const groups = []
-    for (const d of present) {
-      const last = groups[groups.length - 1]
-      if (last && last.rank === d.rank) last.members.push(d)
-      else groups.push({ rank: d.rank, members: [d] })
-    }
-
-    for (const group of groups) {
-      let heights = group.members.map((d) => thickness(d.asr))
-      let gap = TIE_GAP
-      let totalH = heights.reduce((s, h) => s + h, 0) + gap * Math.max(0, heights.length - 1)
-      if (totalH > height && totalH > 0) {
-        const scale = height / totalH
-        heights = heights.map((h) => Math.max(0.55, h * scale))
-        totalH = heights.reduce((s, h) => s + h, 0) + gap * Math.max(0, heights.length - 1)
-        if (totalH > height) {
-          gap = 0
-          const inner = height / group.members.length
-          heights = heights.map(() => inner)
-          totalH = height
-        }
-      }
-      const cy = y(group.rank)
-      let y0 = cy - totalH / 2
-      if (y0 < 0) y0 = 0
-      if (y0 + totalH > height) y0 = Math.max(0, height - totalH)
-
-      group.members.forEach((d, i) => {
-        const h = heights[i]
-        const node = {
-          iso: d.item.iso,
-          cx: x[c],
-          x0: x[c] - NODE_W / 2,
-          x1: x[c] + NODE_W / 2,
-          y0,
-          y1: y0 + h,
-          yc: y0 + h / 2,
-          asr: d.asr,
-          rank: d.rank,
-        }
-        byIso[c].set(d.item.iso, node)
-        y0 += h + gap
+    const packed = packColumn(present, height)
+    packed.forEach((node, i) => {
+      const d = present[i]
+      byIso[c].set(d.item.iso, {
+        iso: d.item.iso,
+        cx: x[c],
+        x0: x[c] - NODE_W / 2,
+        x1: x[c] + NODE_W / 2,
+        y0: node.y0,
+        y1: node.y1,
+        yc: node.yc,
+        asr: d.asr,
+        rank: d.rank,
       })
-    }
+    })
   }
 
   const rows = items.map((item) => {
@@ -78,6 +50,75 @@ export function layoutAlluvial(items, x, y, height) {
   })
 
   return { byIso, rows }
+}
+
+function packColumn(present, height) {
+  const n = present.length
+  if (!n) return []
+  let heights = present.map((d) => thickness(d.asr))
+  let used = heights.reduce((s, h) => s + h, 0)
+
+  if (n === 1) {
+    const h = Math.min(heights[0], height)
+    const y0 = Math.max(0, (height - h) / 2)
+    return [{ y0, y1: y0 + h, yc: y0 + h / 2 }]
+  }
+
+  let gap = PACK_GAP
+  if (used + gap * (n - 1) > height) {
+    const scale = height / (used + PACK_GAP * (n - 1))
+    heights = heights.map((h) => Math.max(MIN_PACK, h * scale))
+    used = heights.reduce((s, h) => s + h, 0)
+    if (used >= height) {
+      gap = 0
+      const s = height / used
+      heights = heights.map((h) => h * s)
+      used = height
+    } else {
+      gap = (height - used) / (n - 1)
+    }
+  } else {
+    gap = (height - used) / (n - 1)
+  }
+
+  const nodes = []
+  let y0 = 0
+  for (let i = 0; i < n; i += 1) {
+    const h = heights[i]
+    const y1 = i === n - 1 ? height : y0 + h
+    nodes.push({ y0, y1, yc: (y0 + y1) / 2 })
+    y0 = y1 + gap
+  }
+  return nodes
+}
+
+/**
+ * Pixel y where ASR crosses `threshold` in a packed column.
+ * Sits in the gap between the last country below and the first at or above.
+ */
+export function packedCutoffY(colMap, threshold, options = {}) {
+  if (!colMap || colMap.size === 0) return null
+  const nodes = [...colMap.values()].sort((a, b) => a.y0 - b.y0 || a.rank - b.rank)
+  const lo = nodes[0]
+  const hi = nodes[nodes.length - 1]
+  if (lo.asr > threshold) {
+    return options.fallback === 'end' ? lo.y0 : null
+  }
+  if (hi.asr < threshold) {
+    return options.fallback === 'end' ? hi.y1 : null
+  }
+  if (lo.asr === threshold) return lo.yc
+  let i = 0
+  while (i < nodes.length && nodes[i].asr < threshold) i += 1
+  if (i === 0) return nodes[0].yc
+  if (i >= nodes.length) return options.fallback === 'end' ? hi.y1 : null
+  const a = nodes[i - 1]
+  const b = nodes[i]
+  if (b.asr === threshold) return b.yc
+  const span = b.asr - a.asr
+  if (span === 0) return (a.y1 + b.y0) / 2
+  const t = (threshold - a.asr) / span
+  return a.y1 + t * (b.y0 - a.y1)
 }
 
 /** Thin ribbons on the rank centerline — same path commands as layoutAlluvial. */
@@ -112,8 +153,8 @@ export function ribbonPath(nodes) {
   for (let i = 1; i < present.length; i += 1) {
     const a = present[i - 1]
     const b = present[i]
-    const mid = (a.x1 + b.x0) / 2
-    d += ` C${mid},${a.y0} ${mid},${b.y0} ${b.x0},${b.y0}`
+    const cx = a.x1 + 0.28 * (b.x0 - a.x1)
+    d += ` C${cx},${a.y0} ${cx},${b.y0} ${b.x0},${b.y0}`
     d += ` L${b.x1},${b.y0}`
   }
   const last = present[present.length - 1]
@@ -122,8 +163,8 @@ export function ribbonPath(nodes) {
     const b = present[i]
     const a = present[i - 1]
     d += ` L${b.x0},${b.y1}`
-    const mid = (a.x1 + b.x0) / 2
-    d += ` C${mid},${b.y1} ${mid},${a.y1} ${a.x1},${a.y1}`
+    const cx = a.x1 + 0.28 * (b.x0 - a.x1)
+    d += ` C${cx},${b.y1} ${cx},${a.y1} ${a.x1},${a.y1}`
   }
   d += ' Z'
   return d

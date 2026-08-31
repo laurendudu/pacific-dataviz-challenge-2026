@@ -42,11 +42,10 @@ them:
 
 Under any fair rule the answer is the same. The 14 Pacific countries produce
 **0.053%** of world emissions — 4.6 hours of the world's output for a whole
-year — and most sit at or below an ASR of 1, while the United States sits near
-20. Grandfathering is the exception, and revealingly so: it hands every country
-the identical ratio and can no longer tell the Marshall Islands apart from
-Saudi Arabia. Its base year is `GF_BASE_YEAR` in `config.py`, currently 2023,
-the end of the window.
+year — and the median Pacific island sits almost exactly at an ASR of 1, while
+the United States sits near 20. Grandfathering is the exception, and
+revealingly so: it hands every country the identical ratio and can no longer
+tell the Marshall Islands apart from Saudi Arabia (see method notes).
 
 ---
 
@@ -287,7 +286,7 @@ the long version, in comments next to the constants they govern.
   WorldRiskIndex are worse for this story — they score absolute humanitarian
   impact, so they weight by population and both rank Tuvalu among the world's
   *safest* countries. On exposure Tuvalu ranks 2nd of 192, behind the Maldives,
-  and six Pacific islands sit in the global top 20.
+  and seven Pacific islands sit in the global top 20.
 - **Pacific figures come from the Pacific Data Hub**, not OWID, wherever both
   have a country.
 

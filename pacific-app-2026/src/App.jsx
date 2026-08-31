@@ -24,7 +24,8 @@ import { Timeline, useChartTimeline } from './components/scroll/Timeline'
  * the disc is `#asr-viz`.
  *
  * Useful marks: 0 opening · ~0.38 Pacific zoom · ~0.52 full earth ·
- * ~0.64 radar · ~0.82 grey pies · ~0.85 colorize · ~0.89 7-of-9 · ~0.96 climate.
+ * ~0.64 radar · ~0.76 spokes · ~0.79 grey pies · ~0.82 colorize / 7-of-9 ·
+ * ~0.96 climate.
  */
 export default function App() {
   const frozenParam = new URLSearchParams(window.location.search).get('p')

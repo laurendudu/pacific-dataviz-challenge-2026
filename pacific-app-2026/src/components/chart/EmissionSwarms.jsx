@@ -90,12 +90,17 @@ export function EmissionSwarms({
   const stacked = (frame?.width ?? 0) < STACKED_AT
   const dx = stacked ? 0 : (geom?.shiftDx ?? 0) * shift
   const ratio = formatRatio(OVERSHOOT)
-  const termOpacity = eqOpacity * (1 - Math.max(qNumOpacity, qDenOpacity))
+  const termOpacity = eqOpacity
   const pacificShare = formatSharePct(pacificPct)
   const asks = geom
     ? placeAsks({
         num: offsetCloud(geom.num, dx),
         den: offsetCloud(geom.den, dx),
+        result: {
+          x: geom.result.x + dx,
+          y: geom.result.y,
+          size: geom.result.size,
+        },
         width: frame.width,
         height: frame.height,
         stacked,
@@ -208,12 +213,13 @@ export function EmissionSwarms({
           }}
           aria-hidden={noteOpacity < 0.5}
         >
-          This is called an <strong>ASR</strong>, or Absolute Sustainability Ratio
+          This is called an <strong>ASR</strong>, or <u>Absolute Sustainability Ratio</u>.
+          It means the world overshot 6.4 times its 2023 budget.
         </p>
       ) : null}
 
       {asks ? (
-        <AskNote box={asks.num.box} opacity={qNumOpacity}>
+        <AskNote box={asks.num.box} opacity={qNumOpacity} variant="side">
           The Pacific emits {pacificShare}% of 2023 GHG emissions
         </AskNote>
       ) : null}
@@ -221,7 +227,7 @@ export function EmissionSwarms({
         <AskNote
           box={asks.den.box}
           opacity={qDenOpacity}
-          variant="den"
+          variant="side"
         >
           {PACIFIC_BUDGET_ASK}
         </AskNote>
@@ -251,10 +257,15 @@ function AskNote({ box, opacity, children, variant }) {
 function AskLeader({ ask, opacity }) {
   if (opacity <= 0.001) return null
   const { line } = ask
-  const dy = Math.abs(line.y2 - line.y1)
-  const bow = dy < 24 ? 0 : (line.y2 >= line.y1 ? 16 : -16)
-  const mx = (line.x1 + line.x2) / 2 + bow
-  const my = (line.y1 + line.y2) / 2
+  const dx = line.x2 - line.x1
+  const dy = line.y2 - line.y1
+  const len = Math.hypot(dx, dy) || 1
+  const bow = Math.min(52, Math.max(18, len * 0.2))
+  const nx = -dy / len
+  const ny = dx / len
+  const side = nx >= 0 ? 1 : -1
+  const mx = (line.x1 + line.x2) / 2 + nx * bow * side
+  const my = (line.y1 + line.y2) / 2 + ny * bow * side
   const d = `M${line.x1},${line.y1} Q${mx},${my} ${line.x2},${line.y2}`
   return (
     <g className="swarm-eq__ask-g" opacity={opacity}>
@@ -572,64 +583,47 @@ function offsetCloud(b, dx) {
   }
 }
 
-function placeAsks({ num, den, width, height, stacked }) {
-  if (stacked) {
-    const w = Math.min(260, Math.max(168, width * 0.55))
-    const numBox = { x: Math.max(8, (width - w) / 2), y: 4, w, h: 52 }
-    const denBox = { x: Math.max(8, (width - w) / 2), y: Math.max(8, height - 60), w, h: 56 }
-    return {
-      num: {
-        box: numBox,
-        line: {
-          x1: num.cx,
-          y1: numBox.y + 44,
-          x2: num.cx,
-          y2: num.minY + 4,
-        },
-      },
-      den: {
-        box: denBox,
-        line: {
-          x1: den.cx,
-          y1: denBox.y + 4,
-          x2: den.cx,
-          y2: den.maxY - 4,
-        },
-      },
-    }
-  }
-
-  const w = Math.min(280, Math.max(200, num.maxX - num.minX + 24))
+function placeAsks({ num, den, result, width, height, stacked }) {
+  const w = stacked
+    ? Math.min(220, Math.max(160, width * 0.48))
+    : Math.min(260, Math.max(200, result.size * 2.2))
+  const x = stacked
+    ? Math.max(8, (width - w) / 2)
+    : Math.min(width - w - 12, result.x)
+  const numH = 52
+  const denH = 68
+  const gap = 12
+  const under = result.y + result.size * 0.72
   const numBox = {
-    x: Math.max(8, num.cx - w / 2),
-    y: Math.max(2, num.minY - 50),
+    x,
+    y: Math.min(height - numH - denH - gap - 8, under + 8),
     w,
-    h: 48,
+    h: numH,
   }
   const denBox = {
-    x: Math.max(8, den.cx - w / 2),
-    y: Math.min(height - 52, den.maxY + 8),
+    x,
+    y: numBox.y + numH + gap,
     w,
-    h: 52,
+    h: denH,
   }
 
   return {
     num: {
       box: numBox,
       line: {
-        x1: num.cx,
-        y1: numBox.y + numBox.h - 2,
-        x2: num.cx,
-        y2: num.minY + 2,
+        x1: x + 10,
+        y1: numBox.y + 8,
+        x2: num.maxX + 4,
+        y2: num.cy,
       },
     },
     den: {
       box: denBox,
       line: {
-        x1: den.cx,
-        y1: denBox.y + 4,
-        x2: den.cx,
-        y2: den.maxY - 2,
+        x1: x + 10,
+        y1: denBox.y + 8,
+        x2: den.maxX + 4,
+        y2: den.cy,
       },
     },
   }

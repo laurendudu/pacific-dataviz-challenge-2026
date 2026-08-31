@@ -27,13 +27,15 @@ export const PACIFIC_TERRITORIES = [
 
 /**
  * Beats inside `#allocation`:
- * 0 grandfathering · 1 egalitarian · 2 prioritarian · 3 hold (toggles live).
+ * 0 empty map (wells, no ratios) · 1 grandfathering · 2 egalitarian ·
+ * 3 prioritarian · 4 hold (toggles live).
  */
 export const ALLOCATION_BEATS = {
-  gf: 0,
-  eg: 1,
-  pr: 2,
-  hold: 3,
+  empty: 0,
+  gf: 1,
+  eg: 2,
+  pr: 3,
+  hold: 4,
 }
 
 export const PRINCIPLES = [

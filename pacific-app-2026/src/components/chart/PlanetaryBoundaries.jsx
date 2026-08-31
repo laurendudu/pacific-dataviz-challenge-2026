@@ -35,8 +35,22 @@ const SOS_STOP = 1 / SPOKE_RATIO
 const HR_STOP = HR_RATIO / SPOKE_RATIO
 const ZONE_BLEND = 0.04
 
-/** 7-of-9 caption — full colour, no climate dim. */
-export const SEVEN_CROSSED = { from: 0.70, to: 0.80 }
+/** Nine spokes that cut the circle into wedges. */
+export const WEDGE_LINES = { from: 0.46, to: 0.56 }
+
+/** Grey wedges take on the zone gradient. */
+export const WEDGE_COLOR = { from: 0.60, to: 0.68 }
+
+/**
+ * Caption windows, keyed to the visual beats so they cannot drift.
+ * They abut — outgoing fades out, incoming fades in — so two lines
+ * never sit stacked in the same slot.
+ */
+export const LIMITS_CAPTION = { from: 0.04, to: WEDGE_LINES.from }
+export const SOS_CAPTION = { from: WEDGE_LINES.from, to: WEDGE_COLOR.from }
+
+/** 7-of-9 caption — starts as the wedges colorize; full colour, no climate dim. */
+export const SEVEN_CROSSED = { from: WEDGE_COLOR.from, to: 0.80 }
 
 /** Climate caption and wedge-focus share this window so they cannot drift. */
 export const CLIMATE_LOOK = { from: 0.82, to: 1.05 }
@@ -48,8 +62,8 @@ export const CLIMATE_LOOK = { from: 0.82, to: 1.05 }
  *   0.00  circle the size of the earth
  *   0.08  dashed radar rings
  *   0.28  rings settle: safe space, planetary boundary, high-risk line
- *   0.48  nine spokes
- *   0.54  names
+ *   0.46  nine spokes (wedge lines)
+ *   0.50  names
  *   0.52  values grow in grey
  *   0.60  grey → zone gradient (green SOS, orange ZoIR, red beyond)
  *   0.82  climate caption + highlight; other wedges recede

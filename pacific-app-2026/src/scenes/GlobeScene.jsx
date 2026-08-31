@@ -13,10 +13,12 @@ import {
   PlanetaryBoundaries,
   SchemaLegend,
   schemaEarthRadius,
+  LIMITS_CAPTION,
+  SOS_CAPTION,
   SEVEN_CROSSED,
   CLIMATE_LOOK,
 } from '../components/chart/PlanetaryBoundaries'
-import { slice, easeOut, easeInOutSmooth, beatOpacity, BEAT_FADE } from '../hooks/useScrollProgress'
+import { slice, easeOut, easeInOutSmooth } from '../hooks/useScrollProgress'
 import { useContributions } from '../data/contributions'
 
 /* ── choreography ─────────────────────────────────────────────────────────
@@ -825,10 +827,10 @@ export function Globe({ progress, progressRef, frozen = false }) {
 
       {schema > 0.001 ? (
         <div className="globe__captions" aria-hidden="true">
-          <GlobeCaption progress={schema} from={0.04} to={0.40}>
-            Our earth is bounded.
+          <GlobeCaption progress={schema} from={LIMITS_CAPTION.from} to={LIMITS_CAPTION.to}>
+            The planet is bounded by biogeochemical limits.
           </GlobeCaption>
-          <GlobeCaption progress={schema} from={0.42} to={0.58}>
+          <GlobeCaption progress={schema} from={SOS_CAPTION.from} to={SOS_CAPTION.to}>
             9 planetary boundaries define a safe operating space for humanity.
           </GlobeCaption>
           <GlobeCaption progress={schema} from={SEVEN_CROSSED.from} to={SEVEN_CROSSED.to}>
@@ -906,10 +908,14 @@ function PacificStatement({ progress, from, to, children }) {
   )
 }
 
+/* Short absolute fade — a fraction of a long window left two captions
+   readable on top of each other. Cap so a handoff is a brief crossfade. */
+const CAPTION_FADE = 0.022
+
 function GlobeCaption({ progress, from, to, children }) {
-  const fade = BEAT_FADE * (to - from)
+  const fade = Math.min(CAPTION_FADE, (to - from) / 3)
   const inOpacity = slice(progress, from, from + fade)
-  const opacity = beatOpacity(progress, from, to)
+  const opacity = Math.min(inOpacity, 1 - slice(progress, to - fade, to))
   const y = (1 - easeOut(inOpacity)) * -14
   if (opacity <= 0.001) return null
 
