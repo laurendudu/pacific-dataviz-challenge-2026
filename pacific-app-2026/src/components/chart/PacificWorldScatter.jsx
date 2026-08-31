@@ -1,27 +1,73 @@
 import { useMemo } from 'react'
 import { extent, max, min } from 'd3-array'
 import { Delaunay } from 'd3-delaunay'
-import { scaleLinear, scaleLog } from 'd3-scale'
+import { scaleLinear, scaleLog, scaleSqrt, scaleSymlog } from 'd3-scale'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { EMITTERS } from '../../data/emitters'
 import { X_VAR_BY_ID, asrOf, formatAsr, xOf } from '../../data/scatter'
 import { AxisBottom, AxisLeft } from './Axis'
 import { ChartFrame } from './ChartFrame'
 
 const MARGIN = { top: 12, right: 12, bottom: 52, left: 40 }
-const WORLD_R = 3.2
-const PACIFIC_R = 5
+const WORLD_R = 4.6
+const EMITTER_R = 6
+const PACIFIC_R = 7
 const HIT_R = 28
 
-const WORLD_FILL = '#a8b2b8'
-const PACIFIC_FILL = 'var(--pacific)'
+/** Pacific, then the large emitters, then everyone else. */
+function groupOf(country) {
+  if (country.pacific) return 'pacific'
+  return EMITTERS.has(country.iso) ? 'emitter' : 'world'
+}
 
-const SCALE_BY_ID = { linear: scaleLinear, log: scaleLog }
+const RADIUS_BY_GROUP = { world: WORLD_R, emitter: EMITTER_R, pacific: PACIFIC_R }
+
+/** Grandfathering lands every country on the same ASR, so marks stack into
+ *  a line. Pixel jitter unstacks the cloud without pretending the ratios
+ *  differ. Y is the stacked axis; X is a smaller nudge for near-twin
+ *  exposure/GDP scores. Offsets are hashed from ISO so hover and re-renders
+ *  stay put. */
+const GF_JITTER_Y = 9
+const GF_JITTER_X = 2.5
+
+/**
+ * Stable unit in [-1, 1] from an ISO3 code. FNV-1a — not random, so the
+ * cloud does not jump.
+ */
+function unitFromIso(iso, salt) {
+  let h = 2166136261
+  const s = `${iso}\0${salt}`
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return ((h >>> 0) / 4294967296) * 2 - 1
+}
+
+const SCALE_BY_ID = {
+  linear: scaleLinear,
+  log: scaleLog,
+  sqrt: scaleSqrt,
+  symlog: scaleSymlog,
+}
+
+const DOT_EASE = [0.4, 0, 0.2, 1]
+const DOT_MOVE = {
+  cx: { duration: 0.7, ease: DOT_EASE },
+  cy: { duration: 0.7, ease: DOT_EASE },
+  opacity: { duration: 0.28, ease: DOT_EASE },
+}
+const DOT_SNAP = { duration: 0 }
+const AXIS_FADE = { duration: 0.28, ease: DOT_EASE }
 
 /**
  * One x × ASR scatter. D3 builds scales, ticks and the hit index; React draws
- * the SVG. Pacific dots sit on top of the world cloud.
+ * the SVG. The world cloud is drawn first, then the large emitters, then the
+ * Pacific on top — the two groups the reader is being asked to compare.
  *
- * `xVarId` picks the x axis: 'vuln' for ND-GAIN climate vulnerability, 'gdp'
- * for GDP per capita. The y axis is always the ASR under `methodId`.
+ * `xVarId` picks one of the five axes in `X_VARS` — exposure, disaster loss,
+ * emissions share, fossil rents or GDP per capita. The y axis is always the
+ * ASR under `methodId`.
  */
 export function PacificWorldScatter({
   countries,
@@ -43,7 +89,7 @@ export function PacificWorldScatter({
     <ChartFrame
       margin={MARGIN}
       title={`${xVar.axisLabel} against ${methodId} Absolute Sustainability Ratio`}
-      desc="Each circle is a country. Pacific territories are the larger teal marks."
+      desc="Each circle is a country. Pacific territories are the larger blue marks."
     >
       {(dms) => (
         <ScatterMarks
@@ -73,35 +119,49 @@ function ScatterMarks({
   width,
   height,
 }) {
-  const x = useMemo(
-    () => SCALE_BY_ID[xVar.scale]().domain(xDomain).range([0, width]).clamp(true),
-    [xVar, xDomain, width],
-  )
+  const reduceMotion = useReducedMotion()
+  const x = useMemo(() => {
+    const scale = SCALE_BY_ID[xVar.scale]().domain(xDomain).range([0, width]).clamp(true)
+    /* Symlog's constant is where it stops behaving like a log and starts
+       behaving like a line. Its default of 1 is above every value on the
+       disaster-loss axis, which would render that axis linear. */
+    if (xVar.constant != null) scale.constant(xVar.constant)
+    return scale
+  }, [xVar, xDomain, width])
   const y = useMemo(
     () => scaleLog().domain(yDomain).range([height, 0]).clamp(true),
     [yDomain, height],
   )
 
-  /* Powers of ten only. d3's log scale returns its minor ticks whenever the
-     domain is narrower than the requested count, which on GDP per capita is
-     two dozen labels along a 340px axis. */
+  /* Ticks the variable names win, filtered to the drawn domain so a fixed
+     list cannot pile up against a clamped edge. Otherwise: powers of ten on a
+     log axis, because d3's log scale returns its minor ticks whenever the
+     domain is narrower than the requested count — two dozen labels along a
+     340px axis on GDP per capita — and the scale's own choice everywhere
+     else. Symlog's own ticks are linear, so those axes always name theirs. */
   const xTicks = useMemo(() => {
+    const [lo, hi] = xDomain
+    if (xVar.ticks) return xVar.ticks.filter((t) => t >= lo && t <= hi)
     if (xVar.scale !== 'log') return undefined
     return x.ticks().filter((t) => Number.isInteger(Math.log10(t)))
-  }, [xVar, x])
+  }, [xVar, x, xDomain])
 
   const placed = useMemo(
-    () => points.map((c) => ({
-      ...c,
-      value: asrOf(c, methodId),
-      cx: x(xOf(c, xVar.id)),
-      cy: y(asrOf(c, methodId)),
-    })),
+    () => points.map((c) => {
+      let cx = x(xOf(c, xVar.id))
+      let cy = y(asrOf(c, methodId))
+      if (methodId === 'gf') {
+        cx += unitFromIso(c.iso, 'x') * GF_JITTER_X
+        cy += unitFromIso(c.iso, 'y') * GF_JITTER_Y
+      }
+      return { ...c, value: asrOf(c, methodId), group: groupOf(c), cx, cy }
+    }),
     [points, methodId, xVar, x, y],
   )
 
-  const world = placed.filter((c) => !c.pacific)
-  const pacific = placed.filter((c) => c.pacific)
+  const world = placed.filter((c) => c.group === 'world')
+  const emitters = placed.filter((c) => c.group === 'emitter')
+  const pacific = placed.filter((c) => c.group === 'pacific')
   const hovered = placed.find((c) => c.iso === hoveredIso) ?? null
 
   const delaunay = useMemo(
@@ -123,8 +183,10 @@ function ScatterMarks({
       return
     }
     const dist = Math.hypot(hit.cx - mx, hit.cy - my)
-    onHover(dist <= HIT_R ? hit : null)
+    onHover(dist <= HIT_R ? hit : null, event)
   }
+
+  const move = reduceMotion ? DOT_SNAP : DOT_MOVE
 
   return (
     <g className="scatter-marks">
@@ -135,21 +197,31 @@ function ScatterMarks({
         tickFormat={formatAsr}
         label="ASR"
       />
-      <AxisBottom
-        scale={x}
-        y={height}
-        ticks={xTicks}
-        tickCount={4}
-        tickFormat={xVar.format}
-        label={xVar.axisLabel}
-      />
 
-      {/* Which way the axis reads. Neither variable is self-evidently
-          directional, and 'more vulnerable to the right' is the whole point. */}
-      <g className="scatter-marks__ends" pointerEvents="none">
-        <text x={0} y={height + 46} textAnchor="start">← {xVar.ends[0]}</text>
-        <text x={width} y={height + 46} textAnchor="end">{xVar.ends[1]} →</text>
-      </g>
+      <AnimatePresence initial={false}>
+        <motion.g
+          key={xVar.id}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={AXIS_FADE}
+        >
+          <AxisBottom
+            scale={x}
+            y={height}
+            ticks={xTicks}
+            tickCount={4}
+            tickFormat={xVar.format}
+            label={xVar.axisLabel}
+          />
+          {/* Which way the axis reads. Neither variable is self-evidently
+              directional, and 'more vulnerable to the right' is the whole point. */}
+          <g className="scatter-marks__ends" pointerEvents="none">
+            <text x={0} y={height + 46} textAnchor="start">← {xVar.ends[0]}</text>
+            <text x={width} y={height + 46} textAnchor="end">{xVar.ends[1]} →</text>
+          </g>
+        </motion.g>
+      </AnimatePresence>
 
       {fairY >= 0 && fairY <= height ? (
         <g className="scatter-marks__fair" pointerEvents="none">
@@ -159,36 +231,55 @@ function ScatterMarks({
       ) : null}
 
       <g className="scatter-marks__world">
-        {world.map((c) => (
-          <circle
-            key={c.iso}
-            className={`scatter-dot scatter-dot--world${c.iso === hoveredIso ? ' is-hovered' : ''}`}
-            cx={c.cx}
-            cy={c.cy}
-            r={WORLD_R}
-            fill={WORLD_FILL}
-          />
-        ))}
+        <AnimatePresence initial={false}>
+          {world.map((c) => (
+            <ScatterDot
+              key={c.iso}
+              c={c}
+              hoveredIso={hoveredIso}
+              r={WORLD_R}
+              variant="world"
+              transition={move}
+            />
+          ))}
+        </AnimatePresence>
+      </g>
+      <g className="scatter-marks__emitters">
+        <AnimatePresence initial={false}>
+          {emitters.map((c) => (
+            <ScatterDot
+              key={c.iso}
+              c={c}
+              hoveredIso={hoveredIso}
+              r={EMITTER_R}
+              variant="emitter"
+              transition={move}
+            />
+          ))}
+        </AnimatePresence>
       </g>
       <g className="scatter-marks__pacific">
-        {pacific.map((c) => (
-          <circle
-            key={c.iso}
-            className={`scatter-dot scatter-dot--pacific${c.iso === hoveredIso ? ' is-hovered' : ''}`}
-            cx={c.cx}
-            cy={c.cy}
-            r={PACIFIC_R}
-            fill={PACIFIC_FILL}
-          />
-        ))}
+        <AnimatePresence initial={false}>
+          {pacific.map((c) => (
+            <ScatterDot
+              key={c.iso}
+              c={c}
+              hoveredIso={hoveredIso}
+              r={PACIFIC_R}
+              variant="pacific"
+              transition={move}
+            />
+          ))}
+        </AnimatePresence>
       </g>
 
       {hovered ? (
-        <circle
+        <motion.circle
           className="scatter-dot__halo"
-          cx={hovered.cx}
-          cy={hovered.cy}
-          r={(hovered.pacific ? PACIFIC_R : WORLD_R) + 3.5}
+          r={RADIUS_BY_GROUP[hovered.group] + 4.5}
+          initial={false}
+          animate={{ cx: hovered.cx, cy: hovered.cy }}
+          transition={move}
         />
       ) : null}
 
@@ -204,12 +295,26 @@ function ScatterMarks({
   )
 }
 
+function ScatterDot({ c, hoveredIso, r, variant, transition }) {
+  return (
+    <motion.circle
+      className={`scatter-dot scatter-dot--${variant}${c.iso === hoveredIso ? ' is-hovered' : ''}`}
+      r={r}
+      initial={{ opacity: 0, cx: c.cx, cy: c.cy }}
+      animate={{ opacity: 1, cx: c.cx, cy: c.cy }}
+      exit={{ opacity: 0 }}
+      transition={transition}
+    />
+  )
+}
+
 /**
  * Shared domains, so the three rule panels can be read against each other.
  *
- * The x domain is padded rather than snapped to zero: ND-GAIN scores the whole
- * world inside 0.26-0.66, and anchoring that at 0 would squeeze every country
- * into the right-hand third of the frame.
+ * How the x extent becomes a drawn domain belongs to the variable, not here:
+ * an index scoring the world inside 0.26-0.66 wants padding rather than a zero
+ * anchor, GDP per capita wants a floor, and the two axes with real zeros on
+ * them want to start at zero.
  */
 export function scatterDomains(countries, xVarId) {
   const xs = countries.map((c) => xOf(c, xVarId)).filter((v) => v != null)
@@ -220,13 +325,9 @@ export function scatterDomains(countries, xVarId) {
   if (!xs.length || !asrs.length) return { xDomain: [0, 1], yDomain: [0.1, 10] }
 
   const [x0, x1] = extent(xs)
-  const xVar = X_VAR_BY_ID[xVarId]
-  const xDomain = xVar.scale === 'log'
-    ? [Math.max(400, x0 * 0.85), x1 * 1.1]
-    : [x0 - (x1 - x0) * 0.06, x1 + (x1 - x0) * 0.06]
 
   return {
-    xDomain,
+    xDomain: X_VAR_BY_ID[xVarId].domain(x0, x1),
     yDomain: [min(asrs) * 0.85, max(asrs) * 1.15],
   }
 }
