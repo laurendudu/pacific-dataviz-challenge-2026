@@ -26,14 +26,14 @@ export const PACIFIC_TERRITORIES = [
 ]
 
 /**
- * Scroll windows inside `#allocation` (0–1). Each method unlocks its
- * toggle as its frame first appears; all three stay for the end hold.
+ * Beats inside `#allocation`:
+ * 0 grandfathering · 1 egalitarian · 2 prioritarian · 3 hold (toggles live).
  */
 export const ALLOCATION_BEATS = {
-  gf: 0.04,
-  eg: 0.34,
-  pr: 0.64,
-  hold: 0.88,
+  gf: 0,
+  eg: 1,
+  pr: 2,
+  hold: 3,
 }
 
 export const PRINCIPLES = [

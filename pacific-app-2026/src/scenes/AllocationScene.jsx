@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Scene } from '../components/scroll/Scene'
-import { AllocationPrinciples, ASR_RING_GAP } from '../components/chart/AllocationPrinciples'
-import { MAP_ASR_RING_GAP } from '../components/chart/AllocationMap'
+import { AllocationPrinciples } from '../components/chart/AllocationPrinciples'
 import { ASR_FILL_OVER, ASR_FILL_UNDER } from '../components/chart/AsrCountry'
 import {
-  ALLOCATION_BEATS,
   PACIFIC_BUDGET_ASK,
   PRINCIPLES,
 } from '../data/allocation'
 import { YEAR, useAsrTables } from '../data/asr'
 import { useContributions } from '../data/contributions'
+import { beatIndex } from '../hooks/useScrollProgress'
 
 const BTN_FADE = {
   duration: 0.36,
@@ -18,64 +17,53 @@ const BTN_FADE = {
 }
 
 /**
- * Follows the global ASR fraction. The swarm leaves a question — how much
- * of the budget belongs to the Pacific — and this page names the three
- * rules that can answer it, one scroll beat at a time. After all three
- * unlock, the same frames are reachable from the toggles.
+ * Follows the world-disc scale guide. The swarm leaves a question — how
+ * much of the budget belongs to the Pacific — and this page answers it on a
+ * Pacific map, naming the three rules one scroll beat at a time. After all
+ * three unlock, the same frames are reachable from the toggles.
  */
 export function AllocationScene() {
-  return <AllocationPage id="allocation" visual="grid" />
-}
-
-/** Same beats and rail as the grid page; the right pane is a Pacific map. */
-export function AllocationMapScene() {
-  return <AllocationPage id="allocation-map" visual="map" />
-}
-
-function AllocationPage({ id, visual }) {
   const tables = useAsrTables(YEAR)
   /* Emissions and population per territory — the allocation metric inverts
      the ASR against them to recover the entitlement in megatonnes. */
   const { rows } = useContributions()
 
   return (
-    <Scene id={id} pages={8}>
+    <Scene id="allocation" pages={ALLOC_BEATS} smooth={1}>
       {(progress) => (
         <AllocationView
-          progress={progress}
+          beat={beatIndex(progress, ALLOC_BEATS)}
           tables={tables}
           rows={rows}
-          visual={visual}
         />
       )}
     </Scene>
   )
 }
 
-function AllocationView({ progress, tables, rows, visual = 'grid' }) {
+/** gf → eg → pr → hold with all toggles live. */
+const ALLOC_BEATS = 4
+
+function AllocationView({ beat, tables, rows }) {
   const reduceMotion = useReducedMotion()
   const [picked, setPicked] = useState(null)
 
   const unlocked = {
-    gf: progress >= ALLOCATION_BEATS.gf,
-    eg: progress >= ALLOCATION_BEATS.eg,
-    pr: progress >= ALLOCATION_BEATS.pr,
+    gf: true,
+    eg: beat >= 1,
+    pr: beat >= 2,
   }
-  const allUnlocked = unlocked.gf && unlocked.eg && unlocked.pr
+  const allUnlocked = beat >= 3
 
   useEffect(() => {
     if (!allUnlocked) setPicked(null)
   }, [allUnlocked])
 
-  const scrolled =
-    progress < ALLOCATION_BEATS.eg ? 'gf'
-      : progress < ALLOCATION_BEATS.pr ? 'eg'
-        : 'pr'
+  const scrolled = beat === 0 ? 'gf' : beat === 1 ? 'eg' : 'pr'
   const methodId = allUnlocked && picked ? picked : scrolled
-  const principle = PRINCIPLES.find((p) => p.id === methodId) ?? PRINCIPLES[0]
 
   return (
-    <div className={`alloc${visual === 'map' ? ' alloc--map' : ''}`}>
+    <div className="alloc alloc--map">
       <div className="alloc__captions">
         <p className="alloc__caption">
           {PACIFIC_BUDGET_ASK}
@@ -88,11 +76,11 @@ function AllocationView({ progress, tables, rows, visual = 'grid' }) {
 
       <div className="alloc__body">
         <AllocationPrinciples
-          methodId={principle.id}
+          methodId={methodId}
           tables={tables}
           rows={rows}
           year={YEAR}
-          visual={visual}
+          visual="map"
         >
           <div className="alloc-toggles" role="group" aria-label="Allocation principles">
             <AnimatePresence initial={false}>
@@ -118,21 +106,6 @@ function AllocationView({ progress, tables, rows, visual = 'grid' }) {
       </div>
 
       <div className="alloc__legend">
-        <p className="alloc__legend-lead">
-          {visual === 'map' ? (
-            <>
-              Same wells as the grid. The red dashed ring is ASR = 1
-              ({MAP_ASR_RING_GAP}px out). Shade grows {MAP_ASR_RING_GAP}px per
-              unit of ASR.
-            </>
-          ) : (
-            <>
-              A fair share is a red dashed ring of 1 ({ASR_RING_GAP}px out). The shade
-              is the country’s 2023 emissions relative to its allocation — not a
-              decorative disc.
-            </>
-          )}
-        </p>
         <ul className="alloc__legend-keys">
           <li>
             <span
@@ -140,7 +113,7 @@ function AllocationView({ progress, tables, rows, visual = 'grid' }) {
               style={{ background: ASR_FILL_UNDER }}
               aria-hidden="true"
             />
-            Sage: inside the allocation
+            Mint: inside the allocation
           </li>
           <li>
             <span

@@ -1,20 +1,18 @@
 import { useMemo, useState } from 'react'
 import { geoCentroid, geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
-import { format } from 'd3-format'
 import { feature as topoFeature } from 'topojson-client'
 import land110 from 'world-atlas/land-110m.json'
 import { PACIFIC_TERRITORIES } from '../../data/allocation'
 import { findCountryFeature } from '../../data/asr'
-import { AsrDisc, asrRadii } from './AsrCountry'
+import { AsrDisc, AsrTooltip, asrHoverCopy, asrRadii } from './AsrCountry'
 import { useChartDimensions } from './useChartDimensions'
 
 /** Well diameter, px. The red ASR = 1 ring sits `RING_GAP` out from this. */
 const SIZE = 28
-/** Pixel gap from the well edge to the ASR = 1 ring — and the shade unit. */
-export const MAP_ASR_RING_GAP = 1
+/** Pixel gap from the well edge to the ASR = 1 ring on the continuous log. */
+export const MAP_ASR_RING_GAP = 20
 
 const WORLD_LAND = topoFeature(land110, land110.objects.land)
-const formatAsr = format('.2~f')
 const NO_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 }
 const PACIFIC_ROTATE = [-173, 7]
 const PAD = 56
@@ -77,9 +75,9 @@ function placeLabels(marks) {
 /**
  * Pacific-centred map. D3 only projects; every mark is JSX.
  * Each territory is the same ASR disc as the grid: well, shade, and a red
- * dashed ring 1px out (ASR = 1). Shade grows 1px per unit of ASR.
+ * dashed ring at ASR = 1. `hideFill` keeps the ring and drops the shade.
  */
-export function AllocationMap({ values, loaded, principle, year }) {
+export function AllocationMap({ values, loaded, principle, year, hideFill = false }) {
   const [ref, dms] = useChartDimensions(NO_MARGIN)
   const [tip, setTip] = useState(null)
   const width = dms.width
@@ -115,16 +113,16 @@ export function AllocationMap({ values, loaded, principle, year }) {
   const moveTip = (event, mark) => {
     const box = ref.current?.getBoundingClientRect()
     if (!box) return
-    const asrLabel = Number.isFinite(mark.asr) ? formatAsr(mark.asr) : '—'
     setTip({
-      name: mark.name,
-      asrLabel,
+      ...asrHoverCopy({ name: mark.name, asr: mark.asr, hideFill }),
       x: event.clientX - box.left,
       y: event.clientY - box.top,
     })
   }
 
-  const title = `${principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
+  const title = principle
+    ? `${principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
+    : `Pacific territories and the ASR = 1 ring, ${year}`
 
   return (
     <div ref={ref} className="alloc-map">
@@ -160,15 +158,14 @@ export function AllocationMap({ values, loaded, principle, year }) {
 
           <g className="alloc-map__zones">
             {geom.stacked.map((m) => {
-              const asrLabel = Number.isFinite(m.asr) ? formatAsr(m.asr) : '—'
-              const hitR = m.missing ? m.rInner : Math.max(m.rAsr, m.rOne)
+              const copy = asrHoverCopy({ name: m.name, asr: m.asr, hideFill })
+              const title = copy.asrLabel
+                ? `${m.name}, allocated-share ratio ${copy.asrLabel}`
+                : m.name
               return (
                 <g
                   key={m.iso}
                   className={`alloc-map__place${m.missing ? ' is-missing' : ''}`}
-                  onMouseEnter={(e) => moveTip(e, m)}
-                  onMouseMove={(e) => moveTip(e, m)}
-                  onMouseLeave={() => setTip(null)}
                 >
                   <AsrDisc
                     cx={m.x}
@@ -180,14 +177,11 @@ export function AllocationMap({ values, loaded, principle, year }) {
                     name={m.name}
                     feature={m.feat}
                     hideShare={m.missing}
+                    hideFill={hideFill}
+                    onHover={(e) => moveTip(e, m)}
+                    onLeave={() => setTip(null)}
                   />
-                  <circle
-                    className="alloc-map__hit"
-                    cx={m.x}
-                    cy={m.y}
-                    r={hitR}
-                  />
-                  <title>{`${m.name}, allocated-share ratio ${asrLabel}`}</title>
+                  <title>{title}</title>
                 </g>
               )
             })}
@@ -213,14 +207,7 @@ export function AllocationMap({ values, loaded, principle, year }) {
         </svg>
       ) : null}
 
-      {tip ? (
-        <div
-          className="alloc-map__tooltip"
-          style={{ left: tip.x, top: tip.y }}
-        >
-          {tip.name} · ASR {tip.asrLabel}
-        </div>
-      ) : null}
+      <AsrTooltip tip={tip} />
     </div>
   )
 }
