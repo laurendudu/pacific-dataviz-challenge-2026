@@ -30,7 +30,7 @@ export const HYPOTHESES = [
   {
     id: 'visitors_per_capita',
     claim: 'Is it tourism?',
-    measure: 'Tourists arriving each year, for every one person who lives there.',
+    measure: 'Amount of tourists per resident per year.',
     verdict: 'ruled-out',
     reading: '',
   },

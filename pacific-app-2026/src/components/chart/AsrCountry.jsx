@@ -1,7 +1,7 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { geoAzimuthalEqualArea, geoCentroid, geoOrthographic, geoPath } from 'd3-geo'
-import { scaleLog } from 'd3-scale'
+import { scaleLinear, scaleLog } from 'd3-scale'
 import { feature as topoFeature } from 'topojson-client'
 import { format } from 'd3-format'
 import land110 from 'world-atlas/land-110m.json'
@@ -20,11 +20,13 @@ export const ASR_RING_GAP = 20
 export const ASR_FLOOR = 0.05
 
 /**
- * Continuous log₁₀ radius from the well edge. Domain floor→1 maps onto
- * `ringGap` px so the red ring is ASR 1; D3 extrapolates past 1, so 10 and
- * 100 keep the same decade width. Built per call; `asrRadii` only reads it.
+ * Pixel growth from the well edge. Log: domain floor→1 maps onto `ringGap`
+ * so the red ring is ASR 1; D3 extrapolates past 1. Linear: domain 0→1 onto
+ * the same gap, so 1 ASR unit = `ringGap` px. Built per call; `asrRadii`
+ * only reads it.
  */
-function radiusScale(gap, floor) {
+function radiusScale(gap, floor, scale = 'log') {
+  if (scale === 'linear') return scaleLinear().domain([0, 1]).range([0, gap])
   return scaleLog().domain([floor, 1]).range([0, gap])
 }
 
@@ -79,26 +81,31 @@ const LAND_FILL = '#2c2545'
 const LAND_STROKE = '#2c2545'
 
 /**
- * Radii for the three concentric marks, on one log₁₀ scale.
+ * Radii for the three concentric marks.
  *
- * From the well edge, radius is log(asr / floor) / log(1 / floor) times
- * `ringGap`. ASR = floor sits on the well; ASR = 1 lands on the red dashed
- * ring; everything past 1 continues on the same log: Palau at ~100 is two
- * decades past the ring, not ninety-nine linear pixels out.
+ * Log₁₀ (default): from the well edge, radius is log(asr / floor) / log(1 /
+ * floor) times `ringGap`. ASR = floor sits on the well; ASR = 1 lands on the
+ * red dashed ring; everything past 1 continues on the same log: Palau at
+ * ~100 is two decades past the ring, not ninety-nine linear pixels out.
+ *
+ * Linear: 1 ASR unit = `ringGap` px past the well, for every territory.
+ * ASR 1 is `ringGap` px out; ASR 2 is 2 × `ringGap`; no per-country rescale.
  *
  * The ring is a labelled mark, not a scale break. Read a disc as under or
  * over that mark, not as a ratio of areas.
  *
- * `rAsr = rInner + grown`, never `rOne * asr`. D3 (`scaleLog`) produces
- * the grown length.
+ * `rAsr = rInner + grown`, never `rOne * asr`. D3 produces the grown length.
  */
-export function asrRadii(size, asr, ringGap = ASR_RING_GAP, floor = ASR_FLOOR) {
+export function asrRadii(size, asr, ringGap = ASR_RING_GAP, floor = ASR_FLOOR, scale = 'log') {
   const gap = Number.isFinite(ringGap) ? ringGap : ASR_RING_GAP
   const lo = Number.isFinite(floor) && floor > 0 ? floor : ASR_FLOOR
+  const linear = scale === 'linear'
   const rInner = size / 2
   const rOne = rInner + gap
   const ratio = Number.isFinite(asr) ? Math.max(0, asr) : 0
-  const grown = ratio <= lo ? 0 : radiusScale(gap, lo)(ratio)
+  const grown = linear
+    ? radiusScale(gap, lo, 'linear')(ratio)
+    : (ratio <= lo ? 0 : radiusScale(gap, lo, 'log')(ratio))
   return { rInner, rOne, rAsr: rInner + grown }
 }
 

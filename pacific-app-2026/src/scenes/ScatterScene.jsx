@@ -142,25 +142,6 @@ function ScatterView({ beat }) {
       <div className="scatter__controls" role="group" aria-label="Plotting ASR as a function of the horizontal axis">
         <span className="scatter__axis-lead">Plotting ASR as a function of</span>
         <AnimatePresence initial={false}>
-          {countries.length > 0 ? (
-            <motion.div
-              key="country-search"
-              className="scatter__search"
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-              transition={FADE}
-            >
-              <RankSearch
-                enabled
-                items={searchItems}
-                pinnedIso={pinnedIso}
-                onPick={setPinnedIso}
-                onPreview={setPreviewIso}
-                reduceMotion={reduceMotion}
-              />
-            </motion.div>
-          ) : null}
           {X_VARS.filter((_, i) => allUnlocked || i <= revealedUntil).map((v) => {
             const i = X_VARS.indexOf(v)
             return (
@@ -183,6 +164,25 @@ function ScatterView({ beat }) {
               </motion.button>
             )
           })}
+          {countries.length > 0 ? (
+            <motion.div
+              key="country-search"
+              className="scatter__search"
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              transition={FADE}
+            >
+              <RankSearch
+                enabled
+                items={searchItems}
+                pinnedIso={pinnedIso}
+                onPick={setPinnedIso}
+                onPreview={setPreviewIso}
+                reduceMotion={reduceMotion}
+              />
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
 

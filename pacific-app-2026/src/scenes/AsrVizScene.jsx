@@ -20,9 +20,10 @@ const FADE = {
 const STAGES = ['well', 'mint', 'gold']
 
 const CAPTIONS = [
-  'The black well edge to the red dashed ring is ASR = 1: one fair share.',
-  'Mint is the stretch from that well edge to the ring: emissions still within the share.',
-  `Past the ring the radius is log₁₀. Gold is overshoot: here, ASR ${GUIDE_ASR}.`,
+  'The outer edge of the center circle to the red dashed ring represents an ASR of 1.',
+  'If the ASR falls below once, the concerned region emits less than its share of the global GHG budget.',
+  `Past the red dashed ring, the region emits more than its share of the global GHG budget. 
+  The emissions are represented on a log10 scale.`,
 ]
 
 const ASR_FOR_STAGE = {

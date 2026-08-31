@@ -1525,6 +1525,12 @@ svg { display: block; }
   stroke-dasharray: 3.5 3;
   vector-effect: non-scaling-stroke;
 }
+.asr-guide__scale line {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-opacity: 0.5;
+  vector-effect: non-scaling-stroke;
+}
 .asr-guide__log-tick line {
   stroke: var(--ink);
   stroke-width: 1;

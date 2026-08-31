@@ -31,25 +31,23 @@ import {
  */
 
 const WELL = 120
-const VB_W = 440
-const VB_H = 292
+const VB_W = 480
+const VB_H = 250
 
 /* Disc centre, and the ruler's baseline: both on the same y so the eye
-   carries the radius across. */
+   carries the wash across. The unroll is magnified: the disc keeps the
+   real 20px ring gap; the ruler stretches that log so the labels can sit. */
 const CX = 96
 const CY = 96
 const RULER_X = 248
+const RULER_MINT = 100
+const RULER_RIGHT = VB_W - 56
 const BAND_H = 20
+const LABEL_Y = 148
+const SCALE_Y = CY - BAND_H / 2 - 22
 
-/* The two colour-keyed rows under the ruler, and where their text ends. */
-const ROW_UNDER = 232
-const ROW_OVER = 262
-const ROW_END = 306
-
-/* Nice log marks. 1 is the red ring, already labelled. 0.2 is too tight
-   against 0.1/0.5 on the mint band, so it is left off. */
-const LOG_TICKS = [0.1, 0.5, 2, 5, 10, 20, 50, 100]
-const TICK_MIN_PX = 8
+/* Log axis above the unrolled wash. 1 is the red ring. */
+const SCALE_MARKS = [0.1, 1, 5]
 
 const FADE = {
   duration: 0.38,
@@ -85,22 +83,18 @@ export function AsrScaleGuide({
   const g = useMemo(() => {
     const lo = Number.isFinite(floor) && floor > 0 ? floor : ASR_FLOOR
     const { rInner, rOne, rAsr } = asrRadii(WELL, asr, ringGap, lo)
-    /* Ruler origin is the black well stroke. The country core is not a length. */
     const origin = RULER_X
-    const oneEnd = origin + (rOne - rInner)
-    const asrEnd = origin + (rAsr - rInner)
-    /* Same mapping as `asrRadii`: floor→1 onto the mint band; D3 extrapolates. */
+    const mintPx = rOne - rInner
+    const washPx = Math.max(mintPx, rAsr - rInner)
+    const oneEnd = origin + RULER_MINT
+    const asrEnd = Math.min(
+      RULER_RIGHT,
+      origin + (mintPx <= 0 ? 0 : RULER_MINT * (washPx / mintPx)),
+    )
     const along = scaleLog().domain([lo, 1]).range([origin, oneEnd])
-    const logTicks = []
-    for (const t of LOG_TICKS) {
-      if (t <= lo || t >= asr * 0.9) continue
-      const x = along(t)
-      if (!Number.isFinite(x)) continue
-      if (x - origin < TICK_MIN_PX) continue
-      const last = logTicks[logTicks.length - 1]
-      if (last && x - last.x < TICK_MIN_PX) continue
-      logTicks.push({ t, x })
-    }
+    const logTicks = SCALE_MARKS
+      .map((t) => ({ t, x: t === 1 ? oneEnd : along(t) }))
+      .filter(({ x }) => Number.isFinite(x) && x >= origin - 0.5 && x <= asrEnd + 0.5)
     return {
       rInner,
       rOne,
@@ -117,8 +111,8 @@ export function AsrScaleGuide({
   const bottom = CY + BAND_H / 2
   const asrLabel = round(asr)
   const floorLabel = g.lo < 0.1 ? g.lo.toString() : round(g.lo)
-  const mintW = g.rOne - g.rInner
-  const goldW = Math.max(0, g.rAsr - g.rOne)
+  const mintW = g.oneEnd - g.origin
+  const goldW = Math.max(0, g.asrEnd - g.oneEnd)
   const washW = hideFill ? mintW : showGold ? mintW + goldW : mintW
   const rOut = hideFill ? g.rInner : g.rAsr
 
@@ -244,42 +238,46 @@ export function AsrScaleGuide({
         />
       </g>
 
+      <g className="asr-guide__scale">
+        <motion.line
+          x1={g.origin}
+          y1={SCALE_Y}
+          y2={SCALE_Y}
+          initial={false}
+          animate={{ x2: g.origin + washW }}
+          transition={grow}
+        />
+        <text
+          className="asr-guide__carry-note"
+          x={g.origin - 8}
+          y={SCALE_Y}
+          dy="0.32em"
+          textAnchor="end"
+        >
+          log₁₀
+        </text>
+        {g.logTicks
+          .filter(({ x }) => x <= g.origin + washW + 0.5)
+          .map(({ t, x }) => (
+            <g key={t} className="asr-guide__log-tick">
+              <line x1={x} y1={SCALE_Y - 4} x2={x} y2={SCALE_Y + 4} />
+              <text className="asr-guide__tick" x={x} y={SCALE_Y - 8} textAnchor="middle">
+                {tickLabel(t)}
+              </text>
+            </g>
+          ))}
+      </g>
+
       {/* ASR = 1 is a mark on the log, same red dashed stroke as the ring */}
       <line
         className="asr-guide__one"
         x1={g.oneEnd}
-        y1={top - 24}
+        y1={SCALE_Y}
         x2={g.oneEnd}
         y2={bottom + 8}
       />
-      <text className="asr-guide__tick" x={g.oneEnd} y={top - 30} textAnchor="middle">
-        ASR = 1: the allocated share of the budget
-      </text>
-      <AnimatePresence initial={false}>
-        {showGold ? (
-          <motion.g
-            key="log-ticks"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={fade}
-          >
-            {g.logTicks.map(({ t, x }) => (
-              <g key={t} className="asr-guide__log-tick">
-                <line x1={x} y1={top} x2={x} y2={bottom} />
-                <text className="asr-guide__tick" x={x} y={top - 8} textAnchor="middle">
-                  {tickLabel(t)}
-                </text>
-              </g>
-            ))}
-            <text className="asr-guide__tick" x={g.asrEnd + 8} y={CY} dy="0.32em" textAnchor="start">
-              ASR {asrLabel}
-            </text>
-          </motion.g>
-        ) : null}
-      </AnimatePresence>
 
-      {/* ── brackets under the two shade stretches (well is the glyph, not a key) ── */}
+      {/* ── labels under each shade, no leaders to collide with ── */}
       <g className="asr-guide__brackets">
         <AnimatePresence initial={false}>
           {showMint ? (
@@ -290,7 +288,7 @@ export function AsrScaleGuide({
               exit={{ opacity: 0 }}
               transition={fade}
             >
-              <Bracket x1={g.origin} x2={g.oneEnd} y={bottom + 12} />
+              <Bracket x1={g.origin} x2={g.oneEnd} y={bottom + 10} />
             </motion.g>
           ) : null}
         </AnimatePresence>
@@ -303,35 +301,8 @@ export function AsrScaleGuide({
               exit={{ opacity: 0 }}
               transition={fade}
             >
-              <Bracket x1={g.oneEnd} x2={g.asrEnd} y={bottom + 12} />
+              <Bracket x1={g.oneEnd} x2={g.asrEnd} y={bottom + 10} />
             </motion.g>
-          ) : null}
-        </AnimatePresence>
-      </g>
-
-      <g className="asr-guide__leaders">
-        <AnimatePresence initial={false}>
-          {showMint ? (
-            <motion.path
-              key="mint-leader"
-              d={`M${mid(g.origin, g.oneEnd)},${bottom + 26} V${ROW_UNDER} H${ROW_END + 6}`}
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={fade}
-            />
-          ) : null}
-        </AnimatePresence>
-        <AnimatePresence initial={false}>
-          {showGold ? (
-            <motion.path
-              key="gold-leader"
-              d={`M${mid(g.oneEnd, g.asrEnd)},${bottom + 26} V${ROW_OVER} H${ROW_END + 6}`}
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={fade}
-            />
           ) : null}
         </AnimatePresence>
       </g>
@@ -341,17 +312,15 @@ export function AsrScaleGuide({
           {showMint ? (
             <motion.text
               key="mint-copy"
-              x={ROW_END}
-              y={ROW_UNDER}
-              dy="0.32em"
-              textAnchor="end"
+              x={mid(g.origin, g.oneEnd)}
+              y={LABEL_Y}
+              textAnchor="middle"
               initial={reduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={fade}
             >
-              <tspan className="asr-guide__key" fill={ASR_INK_UNDER}>mint</tspan>
-              {' = well edge → ASR 1'}
+              <tspan className="asr-guide__key" fill={ASR_INK_UNDER}>within the share</tspan>
             </motion.text>
           ) : null}
         </AnimatePresence>
@@ -359,20 +328,15 @@ export function AsrScaleGuide({
           {showGold ? (
             <motion.text
               key="gold-copy"
-              x={ROW_END}
-              y={ROW_OVER}
-              dy="0.32em"
-              textAnchor="end"
+              x={mid(g.oneEnd, g.asrEnd)}
+              y={LABEL_Y}
+              textAnchor="middle"
               initial={reduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={fade}
             >
-              <tspan className="asr-guide__key" fill={ASR_INK_OVER}>gold</tspan>
-              {' = overshoot · log₁₀ from '}
-              <tspan className="asr-guide__strong">{floorLabel}</tspan>
-              {', ring at +'}
-              <tspan className="asr-guide__strong">{ringGap} px</tspan>
+              <tspan className="asr-guide__key" fill={ASR_INK_OVER}>overshoot</tspan>
             </motion.text>
           ) : null}
         </AnimatePresence>
