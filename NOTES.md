@@ -72,15 +72,16 @@ pip install pyaesa pandas numpy requests sdmx1 pycountry jupyter
 | `02_emissions.ipynb` | Fetches and merges national GHG emissions (SPC + OWID) | `asr/A_lca/…`, `data_viz/emissions.csv`, `countries.csv` | feeds 03 |
 | `03_asr.ipynb` | Computes the ASR under all three allocation rules | `asr.json`, `asr_gdp.json`, `asr_gf.json`, `asr.csv`, `variables.csv` | ✅ |
 | `04_contributions.ipynb` | Each country's share of 2023 world emissions, and the Pacific bloc's | `contributions.json`, `contributions.csv` | ✅ |
-| `07_exposure.ipynb` | Joins six candidate x axes onto the ASR panel | `scatter.json` | ✅ |
-| `08_palau_context.ipynb` | Which indicators make Palau an outlier among Pacific islands, scored by robust z | `palau_context.json` | ✅ |
+| `05_exposure.ipynb` | Joins six candidate x axes onto the ASR panel | `scatter.json` | ✅ |
+| `06_palau_context.ipynb` | Which indicators make Palau an outlier among Pacific islands, scored by robust z | `palau_context.json` | ✅ |
 
-The numbering skips 05 and 06 — those were exploratory tourism and energy
-notebooks for a scene that did not make the final cut, since removed; they live
-in the git history.
+The numbering runs 01–06 with no gaps. Two exploratory notebooks — tourism and
+energy, for a scene that did not make the final cut — were removed, and what is
+now 05 and 06 was 07 and 08 until the renumber; both older sets live in the git
+history.
 
 Timing: notebook 01 downloads ~210 MB and is slow; 03 runs the full allocation
-chain and takes ~20 minutes; 07 takes about a minute; the rest run in seconds.
+chain and takes ~20 minutes; 05 takes about a minute; the rest run in seconds.
 All six are safe to re-run.
 
 Shared settings — paths, the year window (2000–2023), the Pacific country list,
@@ -140,15 +141,15 @@ browsable page, and the machine-readable definition sits at
 
 | | Dataflow | Indicator(s) | What for | Notebook |
 |---|---|---|---|---|
-| ✅ | [`DF_CLIMATE_CHANGE`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_CLIMATE_CHANGE&df%5Bag%5D=SPC) | `GHG_EMI_CAPITA` | GHG emissions per capita for the PICTs — the Pacific end of the ASR numerator | 02, 08 |
-| ✅ | [`DF_SDG_11`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_SDG_11&df%5Bag%5D=SPC) | `VC_DSR_LSGP` | Disaster loss as a share of GDP (SDG 11.5.2) for 12 PICTs, cross-checked row by row against the UN copy | 07 |
-| ✅ | [`DF_ENERGY`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_ENERGY&df%5Bag%5D=SPC) | `ENERGY_IND_006/007/011/015` | Installed capacity, electricity generated, fuel imports, primary energy — Palau's outlier family | 08 |
-| ✅ | [`DF_TOURISM_ARRIVALS`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_TOURISM_ARRIVALS&df%5Bag%5D=SPC) | `TOUR` | Tourist arrivals — Palau's 5.3 visitors per resident, the ruled-out hypothesis | 08 |
-| ✅ | [`DF_POP_PROJ`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_POP_PROJ&df%5Bag%5D=SPC) | `MIDYEARPOPEST` | Mid-year population estimates, the denominator of every per-resident figure | 08 |
-| ✅ | [`DF_WASTE`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WASTE&df%5Bag%5D=SPC) | `SOLIDWASTEPC` | Municipal solid waste per person per day | 08 |
-| ✅ | [`DF_NMDI_FIS`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_NMDI_FIS&df%5Bag%5D=SPC) | `ER_MRN_MARIN` | Marine area protected, % of territorial waters — Palau's counterpoint | 08 |
-| ✅ | [`DF_WBWDI`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WBWDI&df%5Bag%5D=SPC) | `EG_EGY_PRIM_PP_KD`, `AG_LND_FRST_ZS` | Energy intensity and forest cover. **World Bank WDI republished by SPC**, not an SPC measurement — used because it covers the Pacific consistently | 08 |
-| ⬚ | [`DF_TOURISM_EARNINGS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_EARNINGS) | — | Scanned for the Palau search; **no Palau rows exist at all**, so it is a documented gap rather than a source | 08 |
+| ✅ | [`DF_CLIMATE_CHANGE`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_CLIMATE_CHANGE&df%5Bag%5D=SPC) | `GHG_EMI_CAPITA` | GHG emissions per capita for the PICTs — the Pacific end of the ASR numerator | 02, 06 |
+| ✅ | [`DF_SDG_11`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_SDG_11&df%5Bag%5D=SPC) | `VC_DSR_LSGP` | Disaster loss as a share of GDP (SDG 11.5.2) for 12 PICTs, cross-checked row by row against the UN copy | 05 |
+| ✅ | [`DF_ENERGY`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_ENERGY&df%5Bag%5D=SPC) | `ENERGY_IND_006/007/011/015` | Installed capacity, electricity generated, primary energy — Palau's outlier family. `ENERGY_IND_011` (fuel imports) is computed and not shown | 06 |
+| ✅ | [`DF_TOURISM_ARRIVALS`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_TOURISM_ARRIVALS&df%5Bag%5D=SPC) | `TOUR` | Tourist arrivals — Palau's 5.3 visitors per resident, the ruled-out hypothesis | 06 |
+| ✅ | [`DF_POP_PROJ`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_POP_PROJ&df%5Bag%5D=SPC) | `MIDYEARPOPEST` | Mid-year population estimates, the denominator of every per-resident figure | 06 |
+| ✅ | [`DF_WASTE`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WASTE&df%5Bag%5D=SPC) | `SOLIDWASTEPC` | Municipal solid waste per person per day | 06 |
+| ⬚ | [`DF_NMDI_FIS`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_NMDI_FIS&df%5Bag%5D=SPC) | `ER_MRN_MARIN` | Marine area protected, % of territorial waters — scored as Palau's counterpoint, but **not shown**: the line-up runs the six hypotheses in `HYPOTHESES`, and this is not one of them | 06 |
+| ✅ | [`DF_WBWDI`](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WBWDI&df%5Bag%5D=SPC) | `EG_EGY_PRIM_PP_KD`, `AG_LND_FRST_ZS` | Energy intensity — **World Bank WDI republished by SPC**, not an SPC measurement, used because it covers the Pacific consistently. `AG_LND_FRST_ZS` (forest cover) is computed and not shown | 06 |
+| ⬚ | [`DF_TOURISM_EARNINGS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_EARNINGS) | — | Scanned for the Palau search; **no Palau rows exist at all**, so it is a documented gap rather than a source | 06 |
 
 Considered and not used: [`DF_POP_LECZ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_LECZ)
 (share of population in the low-elevation coastal zone) — the closest SPC series
@@ -159,9 +160,9 @@ to a climate-exposure index, but Pacific-only, so it cannot carry a world x axis
 | | Source | What | Notebook |
 |---|---|---|---|
 | ✅ | [Our World in Data — CO₂ and GHG](https://github.com/owid/co2-data) | `total_ghg_excluding_lucf` for every non-Pacific country; wraps EDGAR and the Global Carbon Project | 02 |
-| ✅ | [ND-GAIN Country Index 2026](https://gain.nd.edu/our-work/country-index/download-data/) (University of Notre Dame, CC-licensed) | Climate **exposure**, 192 countries — the scatter's headline x axis. The **vulnerability** composite ships too, as the counter-example the scene argues against | 07 |
-| ✅ | [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal) ([API](https://unstats.un.org/sdgapi/swagger/)), indicator 11.5.2, series `VC_DSR_LSGP` | Direct economic loss from disasters as % of GDP, Sendai Framework, 149 countries | 07 |
-| ✅ | World Bank [`NY.GDP.PETR.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS), [`NY.GDP.COAL.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS), [`NY.GDP.NGAS.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS) | Oil, coal and gas rents as % of GDP, summed, mean 2015–2021 — who was *paid* for the overshoot | 07 |
+| ✅ | [ND-GAIN Country Index 2026](https://gain.nd.edu/our-work/country-index/download-data/) (University of Notre Dame, CC-licensed) | Climate **exposure**, 192 countries — the scatter's headline x axis. The **vulnerability** composite ships too, as the counter-example the scene argues against | 05 |
+| ✅ | [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal) ([API](https://unstats.un.org/sdgapi/swagger/)), indicator 11.5.2, series `VC_DSR_LSGP` | Direct economic loss from disasters as % of GDP, Sendai Framework, 149 countries | 05 |
+| ✅ | World Bank [`NY.GDP.PETR.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS), [`NY.GDP.COAL.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS), [`NY.GDP.NGAS.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS) | Oil, coal and gas rents as % of GDP, summed, mean 2015–2021 — who was *paid* for the overshoot | 05 |
 
 All World Bank indicators are pulled from the public
 [Indicators API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)
@@ -173,7 +174,7 @@ pyaesa downloads and processes these; the notebooks never touch their servers.
 
 | | Source | What it provides here |
 |---|---|---|
-| ✅ | [World Bank World Development Indicators](https://databank.worldbank.org/source/world-development-indicators) | Population and GDP (PPP, constant 2017 USD) for every country — the denominators of the egalitarian and prioritarian rules, and the GDP-per-capita x axis in notebook 07 |
+| ✅ | [World Bank World Development Indicators](https://databank.worldbank.org/source/world-development-indicators) | Population and GDP (PPP, constant 2017 USD) for every country — the denominators of the egalitarian and prioritarian rules, and the GDP-per-capita x axis in notebook 05 |
 | ✅ | Bjørn, A., & Hauschild, M. Z. (2015), [10.1007/s11367-015-0899-2](https://doi.org/10.1007/s11367-015-0899-2) | The 2 °C steady-state climate carrying capacity, 6.81 GtCO₂-eq/yr, shipped by pyaesa as a CSV. Identified as the 2 °C figure in de Bantel et al., *UNCASExt* ([arXiv:2606.21465](https://arxiv.org/abs/2606.21465)), Fig. 2 |
 | ✅ | [UNCASExt / PyUNCASE](https://setac.confex.com/setac/europe2026/meetingapp.cgi/Paper/32699) (de Bantel et al.; Pirson et al.) | The allocation-method definitions the `EG(Pop)` / `PR(GDPcap)` / `AR(E)` formulas follow |
 | ⬚ | [IPCC AR6 Scenarios Database](https://data.ece.iiasa.ac.at/ar6/) (IIASA, [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911)) | Downloaded in notebook 01 for the *dynamic* budget option. **Not used in the published results** — this project runs the static budget, see [method notes](#method-notes) |
@@ -277,7 +278,7 @@ the long version, in comments next to the constants they govern.
 - **Territorial accounting cuts both ways.** Emissions are counted where they
   happen, divided by who lives there. Palau (ASR 97) and New Caledonia (21,
   nickel smelting) come out very high. Both figures are correct and both need
-  context — which is what notebook 08 and the Palau scene provide.
+  context — which is what notebook 06 and the Palau scene provide.
 - **Coverage: 198 countries.** American Samoa, Guam and the Northern Mariana
   Islands have Pacific Data Hub emissions but no World Bank population entry, so
   no budget can be allocated to them. Bermuda, Greenland, San Marino, Monaco,

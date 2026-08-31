@@ -5,10 +5,11 @@ const SPRING = { type: 'spring', visualDuration: 0.4, bounce: 0.08 }
 
 /**
  * Compact country search: magnifying-glass button, then a name/ISO field
- * with arrow-key list, Enter to pin, Escape to clear.
+ * with arrow-key list, Enter to pin, Escape to clear. With `alwaysOpen` the
+ * field skips the button and sits in the toolbar like any other control.
  */
-export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduceMotion }) {
-  const [open, setOpen] = useState(false)
+export function RankSearch({ enabled, alwaysOpen = false, items, pinnedIso, onPick, onPreview, reduceMotion }) {
+  const [open, setOpen] = useState(alwaysOpen)
   const [query, setQuery] = useState('')
   const [listOpen, setListOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -18,15 +19,16 @@ export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduc
 
   useEffect(() => {
     if (!enabled) {
-      setOpen(false)
+      setOpen(alwaysOpen)
       setQuery('')
       setListOpen(false)
     }
-  }, [enabled])
+  }, [enabled, alwaysOpen])
 
   useEffect(() => {
-    if (open) inputRef.current?.focus()
-  }, [open])
+    // Only pull focus when the reader opened the field themselves.
+    if (open && !alwaysOpen) inputRef.current?.focus()
+  }, [open, alwaysOpen])
 
   const matches = useMemo(() => filterCountries(items, query), [items, query])
 
@@ -66,7 +68,8 @@ export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduc
         clear()
         return
       }
-      setOpen(false)
+      if (alwaysOpen) inputRef.current?.blur()
+      else setOpen(false)
       return
     }
     if (event.key === 'Enter') {
@@ -107,7 +110,7 @@ export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduc
       aria-hidden={!enabled}
     >
       <AnimatePresence initial={false}>
-        {!open ? (
+        {!open && !alwaysOpen ? (
           <motion.button
             key="open"
             type="button"
@@ -127,7 +130,7 @@ export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduc
       </AnimatePresence>
 
       <AnimatePresence initial={false}>
-        {enabled && open ? (
+        {open && (enabled || alwaysOpen) ? (
           <motion.div
             key="field"
             className="rank-search__panel"
@@ -137,12 +140,16 @@ export function RankSearch({ enabled, items, pinnedIso, onPick, onPreview, reduc
             transition={transition}
           >
             <label className="rank-search__sr" htmlFor={inputId}>Search a country by name or ISO code</label>
+            <span className="rank-search__glass" aria-hidden="true">
+              <SearchIcon />
+            </span>
             <input
               ref={inputRef}
               id={inputId}
               type="search"
               className="rank-search__input"
               placeholder="Country or ISO"
+              disabled={!enabled}
               value={query}
               autoComplete="off"
               autoCorrect="off"

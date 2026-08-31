@@ -33,42 +33,29 @@ function ringGapFor(scale) {
   return scale === 'linear' ? MAP_ASR_LINEAR_GAP : MAP_ASR_RING_GAP
 }
 
-function placeMarks(projection, values, loaded, scale) {
-  const ringGap = ringGapFor(scale)
+/** Centroids and island paths. Independent of ASR so the map never re-fits. */
+function placeIslands(projection, path) {
   const marks = []
   for (const place of PACIFIC_TERRITORIES) {
     const feat = findCountryFeature(place.iso) ?? findCountryFeature(place.name)
     if (!feat?.geometry) continue
     const pt = projection(geoCentroid(feat))
     if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) continue
-    const raw = values?.get(place.iso)
-    const asr = raw == null ? undefined : Number(raw)
-    const missing = loaded && !Number.isFinite(asr)
-    const { rInner, rOne, rAsr } = asrRadii(
-      SIZE,
-      missing ? 0 : asr,
-      ringGap,
-      undefined,
-      scale,
-    )
     marks.push({
       iso: place.iso,
       name: place.name,
       lines: wrapPlaceName(place.name),
       x: pt[0],
       y: pt[1],
-      asr,
-      missing,
       feat,
-      rInner,
-      rOne,
-      rAsr,
+      d: path(feat),
     })
   }
   return marks
 }
 
-function placeLabels(marks) {
+/** Labels sit on the ASR = 1 ring, which does not move when the fill does. */
+function placeLabels(marks, rOne) {
   if (!marks.length) return marks
   const mx = marks.reduce((s, m) => s + m.x, 0) / marks.length
   const my = marks.reduce((s, m) => s + m.y, 0) / marks.length
@@ -78,10 +65,27 @@ function placeLabels(marks) {
     const hx = dx < 0 ? -1 : 1
     return {
       ...m,
-      lx: m.x + hx * (m.rOne + LABEL_GAP),
-      ly: m.y + (dy / (Math.hypot(dx, dy) || 1)) * (m.rOne * 0.28),
+      lx: m.x + hx * (rOne + LABEL_GAP),
+      ly: m.y + (dy / (Math.hypot(dx, dy) || 1)) * (rOne * 0.28),
       anchor: hx < 0 ? 'end' : 'start',
     }
+  })
+}
+
+function withAsr(marks, values, loaded, scale) {
+  const ringGap = ringGapFor(scale)
+  return marks.map((m) => {
+    const raw = values?.get(m.iso)
+    const asr = raw == null ? undefined : Number(raw)
+    const missing = loaded && !Number.isFinite(asr)
+    const { rInner, rOne, rAsr } = asrRadii(
+      SIZE,
+      missing ? 0 : asr,
+      ringGap,
+      undefined,
+      scale,
+    )
+    return { ...m, asr, missing, rInner, rOne, rAsr }
   })
 }
 
@@ -106,7 +110,7 @@ export function AllocationMap({
   const height = dms.height
   const ringGap = ringGapFor(scale)
 
-  const geom = useMemo(() => {
+  const base = useMemo(() => {
     if (!width || !height) return null
 
     const islands = PACIFIC_TERRITORIES
@@ -121,17 +125,25 @@ export function AllocationMap({
         { type: 'FeatureCollection', features: islands },
       )
     const path = geoPath(projection)
-    const marks = placeLabels(placeMarks(projection, values, loaded, scale))
-      .map((m) => ({ ...m, d: m.feat ? path(m.feat) : null }))
-    const stacked = [...marks].sort((a, b) => b.rAsr - a.rAsr)
-
+    const { rOne } = asrRadii(SIZE, 1, ringGap, undefined, scale)
     return {
       landD: path(WORLD_LAND),
       graticuleD: path(geoGraticule10()),
+      islands: placeLabels(placeIslands(projection, path), rOne),
+    }
+  }, [width, height, ringGap, scale])
+
+  const geom = useMemo(() => {
+    if (!base) return null
+    const marks = withAsr(base.islands, values, loaded, scale)
+    const stacked = [...marks].sort((a, b) => b.rAsr - a.rAsr)
+    return {
+      landD: base.landD,
+      graticuleD: base.graticuleD,
       marks,
       stacked,
     }
-  }, [width, height, values, loaded, scale])
+  }, [base, values, loaded, scale])
 
   const moveTip = (event, mark) => {
     const box = ref.current?.getBoundingClientRect()

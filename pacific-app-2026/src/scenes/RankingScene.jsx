@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { format } from 'd3-format'
 import { Scene } from '../components/scroll/Scene'
@@ -122,9 +122,8 @@ function RankingBeats({
     duration: 0.7,
     reduceMotion,
   })
-  const searchReady = revealPr >= 0.85
   const liveCount = 1 + (revealEg > 0.45 ? 1 : 0) + (revealPr > 0.45 ? 1 : 0)
-  const activeIso = hoveredIso ?? (searchReady ? pinnedIso : null)
+  const activeIso = hoveredIso ?? pinnedIso
   const hovered = model?.rows.items.find((row) => row.iso === activeIso) ?? null
 
   return (
@@ -132,13 +131,12 @@ function RankingBeats({
       beat={beat}
       revealEg={revealEg}
       revealPr={revealPr}
-      searchReady={searchReady}
       liveCount={liveCount}
       model={model}
       loading={loading}
       error={error}
       activeIso={activeIso}
-      pinnedIso={searchReady ? pinnedIso : null}
+      pinnedIso={pinnedIso}
       showRow={showRow}
       volume={volume}
       onHover={onHover}
@@ -155,7 +153,6 @@ function RankingView({
   beat,
   revealEg,
   revealPr,
-  searchReady,
   liveCount,
   model,
   loading,
@@ -190,10 +187,6 @@ function RankingView({
     else pointerRef.current = null
     onHover(iso ?? null)
   }
-
-  useEffect(() => {
-    if (!searchReady) onPin(null)
-  }, [searchReady, onPin])
 
   useLayoutEffect(() => {
     if (!hovered || !pointerRef.current) return
@@ -261,7 +254,8 @@ function RankingView({
         </div>
         <div className="alluvial-tools">
           <RankSearch
-            enabled={searchReady}
+            enabled
+            alwaysOpen
             items={model?.rows.items ?? []}
             pinnedIso={pinnedIso}
             onPick={onPin}

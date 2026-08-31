@@ -1150,7 +1150,7 @@ svg { display: block; }
 
 .alloc-frame {
   display: grid;
-  grid-template-columns: minmax(16rem, 34ch) minmax(0, 1fr);
+  grid-template-columns: minmax(12.8rem, 27.2ch) minmax(0, 1fr);
   gap: clamp(1rem, 2.5vw, 2.5rem);
   width: 100%;
   min-height: 0;
@@ -1297,7 +1297,7 @@ svg { display: block; }
 
 @media (max-width: 64rem) {
   .alloc-frame {
-    grid-template-columns: minmax(14rem, 28ch) minmax(0, 1fr);
+    grid-template-columns: minmax(11.2rem, 22.4ch) minmax(0, 1fr);
   }
   .alloc-pacific {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2502,11 +2502,20 @@ svg { display: block; }
   white-space: nowrap;
   border: 0;
 }
+.rank-search__glass {
+  position: absolute;
+  left: 0.78em;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--ink-secondary);
+  pointer-events: none;
+}
 .rank-search__input {
   flex: 1 1 auto;
   width: 100%;
   margin: 0;
-  padding: 0.48em 0.9em;
+  padding: 0.48em 0.9em 0.48em 2.35em;
   border: 1px solid var(--hairline);
   border-radius: 980px;
   background: var(--paper);
@@ -3037,6 +3046,201 @@ svg { display: block; }
 }
 .palau__tooltip strong { font-weight: 600; }
 .palau__tooltip-rank { color: var(--ink-secondary); font-size: var(--step--2, 0.74rem); }
+
+/* ── Reduction: the allocation frame, with the swarm it comes out of.
+   Controls and map are the allocation scene's own components; only the
+   column layout and the swarm panel are new here. ─────────────────────── */
+.reduction {
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--scene-pad-top) var(--scene-pad-x) var(--scene-pad-bottom);
+  padding-left: calc(var(--shell-rail, 0px) + var(--scene-pad-x));
+  gap: var(--space-xs);
+  background: var(--paper);
+}
+.reduction__captions {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.55fr);
+  gap: 0.2rem var(--space-s);
+}
+.reduction__caption {
+  grid-column: 1;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--step-1);
+  font-weight: var(--font-weight-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.reduction__lede {
+  grid-column: 1;
+  margin: 0;
+  max-width: none;
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+
+.reduction__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.55fr);
+  gap: var(--space-s);
+}
+.reduction__panel { min-width: 0; min-height: 0; position: relative; }
+/* Rules and switch share one row above the map. The row reserves its full
+   height from the first beat so the map never shifts as buttons fade in. */
+/* Flex column, matching .alloc__body: a nested grid `minmax(0, 1fr)` here
+   resolved to zero height on the first layout pass, and the map measures
+   itself on mount, so it came up empty until a resize nudged it. */
+.reduction__panel--map { display: flex; flex-direction: column; align-items: stretch; }
+.reduction__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem var(--space-s);
+}
+.reduction__controls .alloc-toggles { margin-top: 0; margin-bottom: 0; }
+.reduction__switch { margin-top: 0; }
+.reduction__map { flex: 1 1 auto; min-height: 0; position: relative; display: flex; align-items: stretch; }
+.reduction__map .alloc-map { width: 100%; }
+
+.reduction__close {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.2rem;
+  max-width: 62rem;
+  min-height: 5.8em;
+  transition: opacity 0.4s ease;
+}
+.reduction__readout {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.reduction__readout strong { color: var(--ink); font-weight: var(--font-weight-display); }
+.reduction__note {
+  margin: 0;
+  min-height: 2.4em;
+  font-family: var(--font-sans);
+  font-size: var(--step--2, 0.74rem);
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+/* The swarm panel: the honest field, a cone to one magnified dot, a legend. */
+.rswarm {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.35rem;
+}
+.rswarm__field { min-height: 0; height: 100%; position: relative; }
+.rswarm__svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rswarm__mark {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+  pointer-events: none;
+}
+.rswarm__cone { pointer-events: none; }
+.rswarm__cone-fill {
+  fill: var(--ink);
+  fill-opacity: 0.07;
+  stroke: none;
+}
+.rswarm__cone-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.15;
+  stroke-opacity: 0.72;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.rswarm__cone-line--halo {
+  stroke: var(--paper);
+  stroke-width: 3.2;
+  stroke-opacity: 1;
+}
+.rswarm__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.95rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-sans);
+  font-size: var(--step--2, 0.74rem);
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+.rswarm__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rswarm__swatch {
+  flex-shrink: 0;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+}
+.rswarm__swatch--field {
+  background: #ff7a85;
+}
+.rswarm__swatch--cut {
+  background: #1b1626;
+}
+
+@media (max-width: 60rem) {
+  .reduction__captions,
+  .reduction__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reduction__body {
+    grid-template-rows: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  }
+  .reduction__caption { font-size: var(--step-0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reduction__close { transition: none; }
+}
+
+/* The wedge is driven by motion's pathLength, not CSS: no transition here. */
+.rswarm__wedge { pointer-events: none; }
+.rswarm__note { pointer-events: none; }
+.rswarm__note-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.rswarm__note-dot { fill: var(--ink); }
+.rswarm__note-text {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--font-weight-display);
+  letter-spacing: -0.02em;
+  fill: var(--ink);
+  paint-order: stroke fill;
+  stroke: var(--paper);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.rswarm__note-sub {
+  font-weight: 400;
+  letter-spacing: 0;
+  fill: var(--ink-secondary);
+}
+
 
 /* ── Colophon: the last screen. Credits, sources, and the two links a reader
    might actually want: the code, and a way to pass it on. ───────────────── */

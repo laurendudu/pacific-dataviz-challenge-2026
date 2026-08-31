@@ -77,7 +77,7 @@ function Lineup({
           )}
         </h2>
         <p className="palau__lede">
-          Six hypotheses, each plotted against Pacific islands.
+          Six hypotheses, each plotted against Pacific islands
         </p>
         <p className="palau__legend">
           <span className="palau__key palau__key--peer" aria-hidden="true" />
@@ -151,7 +151,7 @@ function Lineup({
           <code>DF_ENERGY</code>, <code>DF_WASTE</code>,{' '}
           <code>DF_TOURISM_ARRIVALS</code>, <code>DF_POP_PROJ</code>,{' '}
           <code>DF_WBWDI</code>. Ranks are Pacific-only. Method and code:{' '}
-          <code>08_palau_context.ipynb</code>.
+          <code>06_palau_context.ipynb</code>.
         </p>
       </footer>
     </div>

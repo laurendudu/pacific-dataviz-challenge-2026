@@ -17,8 +17,8 @@ scrollytelling app in `pacific-app-2026/` reads them and animates eight scenes.
 pip install pyaesa pandas numpy requests sdmx1 pycountry jupyter
 ```
 
-Run the notebooks from the repo root in order — `01`, `02`, `03`, `04`, `07`,
-`08` — then start the app:
+Run the notebooks from the repo root in order — `01` through `06` — then
+start the app:
 
 ```bash
 cd pacific-app-2026 && npm install && npm run dev
@@ -54,21 +54,20 @@ Every dataset that reaches the published piece.
 
 - [Climate Change indicators (DF_CLIMATE_CHANGE)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_CLIMATE_CHANGE&df%5Bag%5D=SPC): GHG emissions per capita for the Pacific islands, the Pacific end of the fair-share maths
 - [SDG Goal 11 (DF_SDG_11)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_SDG_11&df%5Bag%5D=SPC): disaster loss as a share of GDP (SDG 11.5.2) for 12 Pacific islands
-- [Energy indicators (DF_ENERGY)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_ENERGY&df%5Bag%5D=SPC): installed capacity, electricity generated, fuel imports and primary energy (Palau's outlier family)
+- [Energy indicators (DF_ENERGY)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_ENERGY&df%5Bag%5D=SPC): installed capacity, electricity generated and primary energy (Palau's outlier family)
 - [Tourist arrivals (DF_TOURISM_ARRIVALS)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_TOURISM_ARRIVALS&df%5Bag%5D=SPC): visitor arrivals, Palau's 5.3 visitors per resident, the ruled-out hypothesis
 - [Population projections (DF_POP_PROJ)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_POP_PROJ&df%5Bag%5D=SPC): mid-year population estimates, the denominator of every per-resident figure
 - [Solid waste (DF_WASTE)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WASTE&df%5Bag%5D=SPC): municipal solid waste per person per day
-- [Fisheries NMDI (DF_NMDI_FIS)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_NMDI_FIS&df%5Bag%5D=SPC): marine area protected as a share of territorial waters, Palau's counterpoint
-- [World Development Indicators for the Pacific (DF_WBWDI)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WBWDI&df%5Bag%5D=SPC): energy intensity and forest cover (World Bank WDI republished by SPC for consistent Pacific coverage)
+- [World Development Indicators for the Pacific (DF_WBWDI)](https://stats.pacificdata.org/vis?lc=en&df%5Bds%5D=ds:SPC2&df%5Bid%5D=DF_WBWDI&df%5Bag%5D=SPC): energy intensity (World Bank WDI republished by SPC for consistent Pacific coverage)
 
-**Read directly**
+**Additionnal Sources**
 
 - [Our World in Data: CO₂ and greenhouse gas emissions](https://github.com/owid/co2-data): total GHG emissions for every non-Pacific country (wrapping EDGAR and the Global Carbon Project)
 - [ND-GAIN Country Index (University of Notre Dame)](https://gain.nd.edu/our-work/country-index/download-data/): climate exposure for 192 countries, the scatter's headline x axis
 - [UN SDG Global Database, indicator 11.5.2](https://unstats.un.org/sdgs/dataportal): direct economic loss from disasters as a share of GDP (Sendai Framework), 149 countries
 - World Bank fossil-fuel rents ([oil](https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS) · [coal](https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS) · [gas](https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS)): rents as a share of GDP, summed — who was paid for the overshoot
 
-**Via pyaesa**
+**Accessed via pyaesa**
 
 - [World Bank World Development Indicators](https://databank.worldbank.org/source/world-development-indicators): population and GDP (PPP) for every country, the denominators of the fair-share rules
 - [Bjørn & Hauschild (2015)](https://doi.org/10.1007/s11367-015-0899-2): the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr, the budget every fair-share rule divides

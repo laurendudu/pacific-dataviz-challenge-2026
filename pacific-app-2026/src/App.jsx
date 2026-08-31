@@ -11,6 +11,7 @@ import { AllocationScene } from './scenes/AllocationScene'
 import { RankingScene } from './scenes/RankingScene'
 import { ScatterScene } from './scenes/ScatterScene'
 import { PalauScene } from './scenes/PalauScene'
+import { ReductionScene } from './scenes/ReductionScene'
 import { ColophonScene } from './scenes/ColophonScene'
 import { Timeline, useChartTimeline } from './components/scroll/Timeline'
 
@@ -19,7 +20,7 @@ import { Timeline, useChartTimeline } from './components/scroll/Timeline'
  * full-viewport with no pinning, handy for eyeballing a single beat while
  * tuning the choreography. The swarm scene is a following section, so use
  * the normal site and scroll (or jump to `#budget` / `#asr-viz` /
- * `#allocation` / `#ranking` / `#pacific-vs-world` / `#palau` / `#colophon`).
+ * `#allocation` / `#ranking` / `#pacific-vs-world` / `#palau` / `#reduction` / `#colophon`).
  * The global ASR fraction is a later beat of `#budget`. How to read
  * the disc is `#asr-viz`.
  *
@@ -47,6 +48,7 @@ export default function App() {
             <RankingScene />
             <ScatterScene />
             <PalauScene />
+            <ReductionScene />
             <ColophonScene />
           </>
         )}

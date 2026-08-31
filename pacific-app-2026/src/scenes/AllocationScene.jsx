@@ -104,37 +104,58 @@ function AllocationView({ beat, tables, rows }) {
           visual="map"
           scale={scale}
         >
+          {/* All three rules hold the row from the first beat; the locked
+              ones are simply invisible. Mounting them one at a time re-wrapped
+              the row and pushed everything under it down a line per beat, so
+              the scale capsule had to chase the shift. Reserving the finished
+              layout up front means each rule fades in exactly where it will
+              stay and nothing below it ever moves. */}
           <div className="alloc-toggles" role="group" aria-label="Allocation principles">
-            <AnimatePresence initial={false}>
-              {PRINCIPLES.filter((p) => unlocked[p.id]).map((p) => (
+            {PRINCIPLES.map((p) => {
+              const live = unlocked[p.id]
+              return (
                 <motion.button
                   key={p.id}
                   type="button"
                   className={`alloc-toggles__btn${methodId === p.id ? ' is-active' : ''}`}
                   aria-pressed={methodId === p.id}
-                  disabled={!allUnlocked}
-                  initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-                  transition={BTN_FADE}
+                  aria-hidden={!live}
+                  tabIndex={live && allUnlocked ? undefined : -1}
+                  disabled={!allUnlocked || !live}
+                  initial={false}
+                  animate={{ opacity: live ? 1 : 0 }}
+                  transition={reduceMotion ? { duration: 0 } : BTN_FADE}
+                  style={{ pointerEvents: live && allUnlocked ? 'auto' : 'none' }}
                   onClick={() => { if (allUnlocked) setPicked(p.id) }}
                 >
                   {p.label ?? p.title}
                 </motion.button>
-              ))}
-            </AnimatePresence>
+              )
+            })}
           </div>
           <AnimatePresence initial={false}>
             {unlocked.gf ? (
+              /* `layout` on the capsule, not just the pill. The pill's
+                 `layoutId` projection measures against the viewport, so any
+                 move of this control leaves the shade behind at the old
+                 height. The scroll beats no longer move it — the toggle row
+                 above reserves its full height from the start — but a resize
+                 still rewraps that row. As a projection parent the capsule
+                 absorbs the move and the pill, whose box relative to it never
+                 changes, travels with it. Position only: the capsule never
+                 resizes and `layout` would scale the labels. Entrance is
+                 opacity alone, since an animated `y` fights the projection
+                 transform. */
               <motion.div
                 key="scale"
                 className="alloc-scale"
                 role="group"
                 aria-label="ASR radius scale"
-                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-                transition={BTN_FADE}
+                layout={reduceMotion ? false : 'position'}
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={reduceMotion ? BTN_FADE : { ...BTN_FADE, layout: PILL_SPRING }}
               >
                 <LayoutGroup id="alloc-scale">
                 {SCALE_OPTIONS.map((opt) => {
@@ -173,7 +194,7 @@ function AllocationView({ beat, tables, rows }) {
               style={{ background: ASR_FILL_UNDER }}
               aria-hidden="true"
             />
-            Mint: inside the allocation
+            within the allocated share
           </li>
           <li>
             <span
@@ -181,7 +202,7 @@ function AllocationView({ beat, tables, rows }) {
               style={{ background: ASR_FILL_OVER }}
               aria-hidden="true"
             />
-            Gold: past the allocation
+            overshot the allocated share
           </li>
         </ul>
       </div>

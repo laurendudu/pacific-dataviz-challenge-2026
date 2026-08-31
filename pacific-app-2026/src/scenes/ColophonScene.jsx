@@ -25,8 +25,8 @@ const pdh = (id) =>
 
 /**
  * Every dataset that reaches the published piece, linked to the dataset
- * itself rather than its platform's home page. Mirrors the ✅ rows of the
- * README's "Data sources" tables. An item may carry several links when the
+ * itself rather than its platform's home page. Mirrors the ✅ rows of
+ * NOTES.md's "Data sources" tables. An item may carry several links when the
  * "dataset" is really a set of sibling series (the World Bank rents).
  */
 const DATA_GROUPS = [
@@ -43,7 +43,7 @@ const DATA_GROUPS = [
       },
       {
         links: [{ label: 'Energy indicators (DF_ENERGY)', url: pdh('DF_ENERGY') }],
-        use: 'installed capacity, electricity generated, fuel imports and primary energy (Palau’s outlier family)',
+        use: 'installed capacity, electricity generated and primary energy (Palau’s outlier family)',
       },
       {
         links: [{ label: 'Tourist arrivals (DF_TOURISM_ARRIVALS)', url: pdh('DF_TOURISM_ARRIVALS') }],
@@ -58,17 +58,13 @@ const DATA_GROUPS = [
         use: 'municipal solid waste per person per day',
       },
       {
-        links: [{ label: 'Fisheries NMDI (DF_NMDI_FIS)', url: pdh('DF_NMDI_FIS') }],
-        use: 'marine area protected as a share of territorial waters, Palau’s counterpoint',
-      },
-      {
         links: [{ label: 'World Development Indicators for the Pacific (DF_WBWDI)', url: pdh('DF_WBWDI') }],
-        use: 'energy intensity and forest cover (World Bank WDI republished by SPC for consistent Pacific coverage)',
+        use: 'energy intensity (World Bank WDI republished by SPC for consistent Pacific coverage)',
       },
     ],
   },
   {
-    title: 'Read directly',
+    title: 'Additional sources',
     items: [
       {
         links: [{ label: 'Our World in Data: CO₂ and greenhouse gas emissions', url: 'https://github.com/owid/co2-data' }],
@@ -94,7 +90,7 @@ const DATA_GROUPS = [
     ],
   },
   {
-    title: 'Via pyaesa',
+    title: 'Accessed via pyaesa',
     items: [
       {
         links: [{ label: 'World Bank World Development Indicators', url: 'https://databank.worldbank.org/source/world-development-indicators' }],

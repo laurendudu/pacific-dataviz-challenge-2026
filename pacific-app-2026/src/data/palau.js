@@ -3,7 +3,7 @@ import { useData } from './useData'
 
 /**
  * `palau_context.json`: the indicators on which Palau is an outlier among its
- * own neighbours, written by 08_palau_context.ipynb. Each record carries every
+ * own neighbours, written by 06_palau_context.ipynb. Each record carries every
  * island's value plus Palau's rank, the peer median and a robust z.
  *
  * Ranks are Pacific-only: this file answers "does Palau stand out from the

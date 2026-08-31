@@ -55,6 +55,11 @@ export const CHARTS = [
     target: { type: 'hash', id: 'palau' },
   },
   {
+    id: 'reduction',
+    label: 'What the Pacific can (not) bring to the table',
+    target: { type: 'hash', id: 'reduction' },
+  },
+  {
     id: 'credits',
     label: 'Credits',
     target: { type: 'hash', id: 'colophon', progress: 0 },
@@ -108,6 +113,7 @@ function scrollToSection(id, instant, { progress, beat } = {}) {
 
 function readActiveChartId() {
   if (sectionIsActive('colophon')) return 'credits'
+  if (sectionIsActive('reduction')) return 'reduction'
   if (sectionIsActive('palau')) return 'palau'
   if (sectionIsActive('pacific-vs-world')) return 'pacific-vs-world'
   if (sectionIsActive('ranking')) return 'ranking'

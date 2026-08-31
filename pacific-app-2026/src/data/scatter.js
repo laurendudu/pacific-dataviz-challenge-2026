@@ -5,7 +5,7 @@ import { useData } from './useData'
 
 /**
  * The country panel behind the Pacific-vs-world scatters, written by
- * 07_exposure.ipynb: 198 countries at 2023, each with an ASR under the three
+ * 05_exposure.ipynb: 198 countries at 2023, each with an ASR under the three
  * allocation rules and six candidate x variables, five of which are plotted.
  *
  * The axes answer three different questions, and scroll is the argument:
@@ -48,7 +48,7 @@ const padded = (pad) => (x0, x1) => [x0 - (x1 - x0) * pad, x1 + (x1 - x0) * pad]
  * this project does not is an argument about what the composite is made of,
  * which a reader cannot see in the picture, because on that axis the Pacific
  * lands hard right too and reads as confirmation. The case against it belongs
- * where it can be shown: 07_exposure.ipynb and the README.
+ * where it can be shown: 05_exposure.ipynb and the README.
  *
  * `key` is the field on a country row;
  * `scale` names the d3 constructor the chart builds it with; `domain` turns
