@@ -5,24 +5,24 @@
    one hue shouts over the others.
 
    Every accent ships as a PAIR:
-     --x        the pop fill — discs, bands, flows, swatches, thick strokes
-     --x-ink    the same hue deepened to ≥4.5:1 on paper — text and hairlines
+     --x        the pop fill: discs, bands, flows, swatches, thick strokes
+     --x-ink    the same hue deepened to ≥4.5:1 on paper: text and hairlines
    Bright fills never carry small text. Reach for the -ink twin there.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
   color-scheme: light;
 
-  /* Shell — soft lilac paper, plum ink */
+  /* Shell: soft lilac paper, plum ink */
   --paper: #fdfbff;
   --ink: #221c35;
   --ink-secondary: #6e6885; /* 5.3:1 on paper */
-  --ink-muted: #766f8f;     /* 4.6:1 — still AA at caption size */
+  --ink-muted: #766f8f;     /* 4.6:1, still AA at caption size */
   --hairline: #e6e0f5;
   /* Timeline panel. The stage stays full-bleed; the panel overlays after the title. */
   --app-sidebar: 16rem;
 
-  /* Surfaces — light washes; the piece has no dark figures left */
+  /* Surfaces: light washes; the piece has no dark figures left */
   --surface-0: #faf7ff;   /* page ground */
   --surface-1: #f4f0ff;   /* chart surface, hover wells */
   --surface-2: #ede7fb;   /* raised: step cards, tooltips */
@@ -33,9 +33,9 @@
   --text-secondary: var(--ink-secondary);
   --text-muted:     var(--ink-muted);
 
-  /* Categorical series — fixed order, never cycled */
-  --series-1: #5b6ee1;  /* periwinkle — Pacific category                    */
-  --series-2: #ff8a1f;  /* bright orange — large emitters                   */
+  /* Categorical series: fixed order, never cycled */
+  --series-1: #5b6ee1;  /* periwinkle: Pacific category                    */
+  --series-2: #ff8a1f;  /* bright orange: large emitters                   */
   --series-3: #12bfa8;  /* lagoon    */
   --series-4: #f9a61a;  /* marigold  */
   --series-5: #ff6fa8;  /* bubblegum */
@@ -52,7 +52,7 @@
   --series-7-ink: #6b45e0;
   --series-8-ink: #d22e51;
 
-  /* Status — reserved, never reused as a series */
+  /* Status: reserved, never reused as a series */
   --status-good:     #35ce84;
   --status-warning:  #ffc53d;
   --status-serious:  #ff9457;
@@ -73,17 +73,17 @@
   --world:     #b7afd0;                 /* rest-of-world marks on paper        */
 
   /* ASR disc scale. Discs wash at 0.26, so the fills run bright; the -ink
-     twins carry the legend words. Mirrored in AsrCountry.jsx — change both. */
-  --asr-under:     #23c29a;  /* mint — inside the fair share */
-  --asr-over:      #ffb020;  /* gold — overshoot             */
+     twins carry the legend words. Mirrored in AsrCountry.jsx. Change both. */
+  --asr-under:     #23c29a;  /* mint: inside the fair share */
+  --asr-over:      #ffb020;  /* gold: overshoot             */
   --asr-under-ink: #0d8268;
   --asr-over-ink:  #a36600;
 
-  /* Chart furniture — recessive by rule */
+  /* Chart furniture: recessive by rule */
   --grid-line: #ebe5f8;
   --axis-line: #b9afd8;
 
-  /* Type — system UI (SF on Apple) then Helvetica Neue. Regular body, never Light. */
+  /* Type: system UI (SF on Apple) then Helvetica Neue. Regular body, never Light. */
   --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif: var(--font-sans);
   --font-mono: var(--font-sans);
@@ -103,7 +103,7 @@
   --space-l:  3.5rem;
   --space-xl: 6.5rem;
 
-  /* Matched scene insets — captions sit high, closing lines sit on the floor. */
+  /* Matched scene insets: captions sit high, closing lines sit on the floor. */
   --scene-pad-top: clamp(1.65rem, 3.5svh, 2.35rem);
   --scene-pad-bottom: clamp(1.5rem, 3.25svh, 2.15rem);
   --scene-pad-x: clamp(1.75rem, 4.5vw, 4rem);

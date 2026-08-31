@@ -35,7 +35,7 @@ const formatIndex = format('.3~f')
 /** Two significant digits, fixed notation: 0.000009%, 0.024%, 31%. */
 const formatPercent = (v) => `${format('.2~r')(v)}%`
 
-/** Linear axes are padded rather than snapped to zero — an index that scores
+/** Linear axes are padded rather than snapped to zero: an index that scores
  *  the whole world inside 0.26-0.66 would sit in the right-hand third. */
 const padded = (pad) => (x0, x1) => [x0 - (x1 - x0) * pad, x1 + (x1 - x0) * pad]
 
@@ -45,7 +45,7 @@ const padded = (pad) => (x0, x1) => [x0 - (x1 - x0) * pad, x1 + (x1 - x0) * pad]
  *
  * The panel also carries ND-GAIN's composite `vuln`, and it is deliberately
  * not an axis here. It is the chart most climate entries draw, and the reason
- * this project does not is an argument about what the composite is made of —
+ * this project does not is an argument about what the composite is made of,
  * which a reader cannot see in the picture, because on that axis the Pacific
  * lands hard right too and reads as confirmation. The case against it belongs
  * where it can be shown: 07_exposure.ipynb and the README.
@@ -70,7 +70,7 @@ export const X_VARS = [
     format: formatIndex,
     /** Low-to-high reading, drawn under the axis so the direction is explicit. */
     ends: ['less exposed', 'more exposed'],
-    lede: 'Physical exposure rises to the right — sea level, heat, rainfall, crop yield, and how much of a country stands in their way. The Pacific gathers where the harm lands and the overshoot is smallest.',
+    lede: 'Physical exposure rises to the right: sea level, heat, rainfall, crop yield, and how much of a country stands in their way. The Pacific gathers where the harm lands and the overshoot is smallest.',
     note: 'New Caledonia and French Polynesia are territories and carry no score.',
   },
   {
@@ -90,7 +90,7 @@ export const X_VARS = [
     format: formatPercent,
     ends: ['lost less', 'lost more'],
     lede: 'Harm already paid for, in money: what disasters destroyed each year as a share of the economy. Vanuatu and Tuvalu lose a larger share than any country outside the poorest of Africa and Asia.',
-    note: 'Reported loss under the Sendai Framework — a floor, not a measurement, and it understates small islands worst of all: Vanuatu’s largest filed year is 0.41% of GDP over a period containing Cyclone Pam. The Pacific ranks this high anyway; 49 countries have never filed.',
+    note: 'Reported loss under the Sendai Framework: a floor, not a measurement, and it understates small islands worst of all: Vanuatu’s largest filed year is 0.41% of GDP over a period containing Cyclone Pam. The Pacific ranks this high anyway; 49 countries have never filed.',
   },
   {
     id: 'share',

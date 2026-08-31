@@ -3,7 +3,7 @@
  *
  * BUDGET is the *steady-state* climate carrying capacity: the annual level of
  * greenhouse gases that could be sustained indefinitely without pushing global
- * warming past 2 °C. It is not a countdown and carries no target date — emit
+ * warming past 2 °C. It is not a countdown and carries no target date: emit
  * this much every year, forever, and the climate settles at 2 °C.
  *   6.81 GtCO2-eq/yr, from Bjørn & Hauschild (2015), shipped in pyaesa as
  *   gwp100_lcia_cc_steady_state.csv (min_cc). Confirmed in de Bantel et al.,
@@ -15,7 +15,7 @@
  *   Source: data_viz/contributions.json (meta.world_gt).
  *
  * Deliberately NOT the AR6 pathway budget. A 2 °C pathway allows 42.6 Gt in
- * 2023 — almost exactly what was emitted — because a pathway defers its cuts
+ * 2023 (almost exactly what was emitted) because a pathway defers its cuts
  * to later decades. That answers "are we on the curve this year?"; this chart
  * answers "is this level survivable at all?".
  */

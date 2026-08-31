@@ -38,7 +38,7 @@ import { useContributions } from '../data/contributions'
 const OPENING_PAGES = 7
 const TOTAL_PAGES = 19
 const T = OPENING_PAGES / TOTAL_PAGES
-/* Pacific choropleth hold — timeline jump target and the `?p=` freeze mark.
+/* Pacific choropleth hold: timeline jump target and the `?p=` freeze mark.
    Sits in the short rest after zoom-in (at T) and before zoom-out (T+0.02). */
 export const PACIFIC_ZOOM_PROGRESS = T + 0.01
 
@@ -86,7 +86,7 @@ export function subscribeOpeningGate(fn) {
 }
 
 /* Sidebar panel slides in after morph (layout), but stays invisible until the
-   Pacific sentence / emissions legend fade in — same window as ZOOM_IN. */
+   Pacific sentence / emissions legend fade in, same window as ZOOM_IN. */
 let sidebarReveal = 0
 const sidebarRevealListeners = new Set()
 
@@ -237,7 +237,7 @@ const PLACE_LABEL = {
   'Solomon Is.': 'Solomon Islands',
 }
 
-/* Split long place names onto two lines at the same font-size — never shrink. */
+/* Split long place names onto two lines at the same font-size. Never shrink. */
 function wrapPlaceName(name) {
   const words = name.split(' ')
   if (words.length <= 1) return [name]
@@ -253,7 +253,7 @@ function formatSharePct(pct) {
   return Number(pct).toPrecision(2)
 }
 
-/* Shared halo at Pacific zoom — same size as Papua New Guinea for every place. */
+/* Shared halo at Pacific zoom: same size as Papua New Guinea for every place. */
 export const ZONE_R = 46
 const ZONE_LABEL_GAP = 8
 const ZONE_LINE_GAP = 7.4
@@ -290,17 +290,17 @@ const diagramCountries = [
 
    Low end is a blush so tiny shares (the Pacific, most of Africa) read as a
    wash. The ramp warms through coral to a deep raspberry, so China and the US
-   land on #8a2350 — hot rather than brick, and still the darkest thing on the
+   land on #8a2350, hot rather than brick, and still the darkest thing on the
    map. Hue drifts peach → pink on purpose; lightness only ever falls, which is
    the part a choropleth actually has to get right.
 
-   Shares are brutally skewed — China 31.3%, Nauru 0.000003%, seven orders of
-   magnitude — so the ramp position is a POWER of the share, not the share
+   Shares are brutally skewed (China 31.3%, Nauru 0.000003%, seven orders of
+   magnitude), so the ramp position is a POWER of the share, not the share
    itself. Linear paints every country but China and the United States white;
    log overcorrects and paints Chad the same red as Japan, which is the one
    thing this map must never say. Exponent 0.35 was picked against the actual
    distribution: the top three stay unmistakably dark, Europe reads mid, and
-   159 of 198 countries — most of Africa, all fourteen Pacific islands — sit
+   159 of 198 countries (most of Africa, all fourteen Pacific islands) sit
    in the lightest fifth of the ramp. */
 const PALETTE = [
   '#fff1ec', '#ffdcd2', '#ffc0b4', '#ff9e92', '#fa7a72', '#e85567', '#c43a62', '#8a2350',
@@ -343,7 +343,7 @@ export function GlobeScene() {
 
 /* Keep EarthGL width/height glued to the first viewport measure (and to
    window resizes). Overlaying the sidebar must not feed a new size into
-   react-globe.gl — that remounts the WebGL canvas mid-crossfade. */
+   react-globe.gl: that remounts the WebGL canvas mid-crossfade. */
 function useHandoffStableSize(measuredW, measuredH) {
   const [size, setSize] = useState({ width: 0, height: 0 })
   const pendingRef = useRef(true)
@@ -433,7 +433,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
 
   const { morph, dock, lon, tilt, schema, land, zoom } = motion(progress, spinRef.current)
   const spinning = progress <= IDLE_UNTIL
-  /* Keep the WebGL tree mounted through the morph — disposing Three.js at
+  /* Keep the WebGL tree mounted through the morph: disposing Three.js at
      MORPH[1] was the hitch. Tear it down only once the schema owns the stage. */
   const keepPhoto = progress < SCHEMA[0]
   const landOpacity = morph * land
@@ -529,7 +529,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
     return () => cancelAnimationFrame(frame)
   }, [width, height, pRef, zoomSpring, frozen])
 
-  /* Project on first layout (and on turn), not on the first morph frame —
+  /* Project on first layout (and on turn), not on the first morph frame:
      building ~200 country paths mid-crossfade was a main-thread hitch. */
   const { paths, zones, cx, cy, graticuleD } = useMemo(() => {
     const empty = { paths: [], zones: [], cx: 0, cy: 0, graticuleD: null }
@@ -680,7 +680,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
             className="globe__map"
             transform={`translate(${cx} ${cy}) scale(${s0}) translate(${-cx} ${-cy})`}
           >
-            {/* One opacity on the group — not per-country — so React is not
+            {/* One opacity on the group (not per-country), so React is not
                 rewriting ~200 attributes at 30fps through the crossfade. */}
             <g
               opacity={landOpacity}
@@ -847,7 +847,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
 
 /* Fade in with the Pacific 2023 sentence (not the morph), so the sidebar can
    finish sliding first. Stay until the land itself goes, so the choropleth is
-   never unexplained. Ticks sit on the ramp's power scale — the bunching at
+   never unexplained. Ticks sit on the ramp's power scale: the bunching at
    the light end is the skew in the data, drawn. */
 function EmissionsLegend({ progress, landOpacity, ramp, year, compact }) {
   const inOpacity = legendRevealOpacity(progress)
@@ -856,7 +856,7 @@ function EmissionsLegend({ progress, landOpacity, ramp, year, compact }) {
   if (opacity <= 0.001) return null
 
   /* The bar shrinks with the viewport but the labels do not, so a narrow
-     screen keeps only the two ends — the interior ticks would collide. */
+     screen keeps only the two ends: the interior ticks would collide. */
   const scale = compact ? LEGEND_TICKS.slice(0, 1) : LEGEND_TICKS
   const ticks = [...scale.filter((t) => t < ramp.max), ramp.max]
 
@@ -908,7 +908,7 @@ function PacificStatement({ progress, from, to, children }) {
   )
 }
 
-/* Short absolute fade — a fraction of a long window left two captions
+/* Short absolute fade: a fraction of a long window left two captions
    readable on top of each other. Cap so a handoff is a brief crossfade. */
 const CAPTION_FADE = 0.022
 

@@ -9,12 +9,12 @@ const SIZE = 59
  * a well-below-1 atoll, a Pacific state just under its fair share, a
  * Pacific state over it, and a large emitter far past the 1-ring.
  *
- * All four share one frame, sized to hug the largest disc — China at
+ * All four share one frame, sized to hug the largest disc: China at
  * ~11.5. The SVG width is capped in CSS, so a looser frame would only
  * shrink every glyph.
  *
  * The scale itself is explained back in the swarm scene, where the reader
- * first meets a disc — see `AsrScaleGuide`.
+ * first meets a disc. See `AsrScaleGuide`.
  */
 export function AsrScene() {
   const { values } = useAsr(YEAR)

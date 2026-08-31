@@ -26,13 +26,13 @@ const VOLUME = { duration: 0.45, ease: [0.4, 0, 0.2, 1] }
  * piece argues them: grandfathering, egalitarian, prioritarian.
  *
  * Rank 1 (lowest ASR) sits at the top. Grandfathering gives every country the
- * same ratio, so that column is one shared node — the flat panel is the
+ * same ratio, so that column is one shared node: the flat panel is the
  * argument, drawn rather than asserted. The grey mass lives between the two
  * columns that actually rank, so 198 strokes never knot on the origin.
  *
  * Columns keep their final x from the first frame (left / centre / right).
  * Scroll `reveal` (0–1 per later column) grows a clip so cords draw rightward
- * into egalitarian, then prioritarian — the layout never recenters.
+ * into egalitarian, then prioritarian. The layout never recenters.
  * D3 supplies the scale and the hover index; every mark is JSX.
  */
 export function AsrRanking({
@@ -177,7 +177,7 @@ function RankingMarks({
       notes.push({ id: 'asr-100', label: 'ASR = 100', py: cutoff100Y, hi: true })
     }
     /* A country a rule cannot score (no PPP GDP under prioritarian) anchors
-       its label to the last column it actually appears in — never to a
+       its label to the last column it actually appears in, never to a
        column where it has no mark. */
     const countries = labelled
       .map((row) => {
@@ -638,7 +638,7 @@ function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }
   )
 }
 
-/** Straight dashed segments only — cubics ate the gaps on a thick stroke. */
+/** Straight dashed segments only: cubics ate the gaps on a thick stroke. */
 function CutoffRule({ points, height, kind = 'one' }) {
   const hi = kind === 'hi'
   const dash = hi ? CUTOFF_DASH_HI : CUTOFF_DASH

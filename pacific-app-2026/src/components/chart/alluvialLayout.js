@@ -121,7 +121,7 @@ export function packedCutoffY(colMap, threshold, options = {}) {
   return a.y1 + t * (b.y0 - a.y1)
 }
 
-/** Thin ribbons on the rank centerline — same path commands as layoutAlluvial. */
+/** Thin ribbons on the rank centerline: same path commands as layoutAlluvial. */
 export function layoutSpine(items, x, y) {
   const rows = items.map((item) => {
     const nodes = item.ranks.map((rank, c) => {

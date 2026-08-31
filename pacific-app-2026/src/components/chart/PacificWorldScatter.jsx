@@ -8,7 +8,7 @@ import { X_VAR_BY_ID, asrOf, formatAsr, xOf } from '../../data/scatter'
 import { AxisBottom, AxisLeft } from './Axis'
 import { ChartFrame } from './ChartFrame'
 
-const MARGIN = { top: 12, right: 12, bottom: 52, left: 40 }
+const MARGIN = { top: 12, right: 12, bottom: 86, left: 40 }
 const WORLD_R = 4.6
 const EMITTER_R = 6
 const PACIFIC_R = 7
@@ -31,7 +31,7 @@ const GF_JITTER_Y = 9
 const GF_JITTER_X = 2.5
 
 /**
- * Stable unit in [-1, 1] from an ISO3 code. FNV-1a — not random, so the
+ * Stable unit in [-1, 1] from an ISO3 code. FNV-1a: not random, so the
  * cloud does not jump.
  */
 function unitFromIso(iso, salt) {
@@ -63,9 +63,9 @@ const AXIS_FADE = { duration: 0.28, ease: DOT_EASE }
 /**
  * One x × ASR scatter. D3 builds scales, ticks and the hit index; React draws
  * the SVG. The world cloud is drawn first, then the large emitters, then the
- * Pacific on top — the two groups the reader is being asked to compare.
+ * Pacific on top: the two groups the reader is being asked to compare.
  *
- * `xVarId` picks one of the five axes in `X_VARS` — exposure, disaster loss,
+ * `xVarId` picks one of the five axes in `X_VARS`: exposure, disaster loss,
  * emissions share, fossil rents or GDP per capita. The y axis is always the
  * ASR under `methodId`.
  */
@@ -136,8 +136,8 @@ function ScatterMarks({
   /* Ticks the variable names win, filtered to the drawn domain so a fixed
      list cannot pile up against a clamped edge. Otherwise: powers of ten on a
      log axis, because d3's log scale returns its minor ticks whenever the
-     domain is narrower than the requested count — two dozen labels along a
-     340px axis on GDP per capita — and the scale's own choice everywhere
+     domain is narrower than the requested count (two dozen labels along a
+     340px axis on GDP per capita), and the scale's own choice everywhere
      else. Symlog's own ticks are linear, so those axes always name theirs. */
   const xTicks = useMemo(() => {
     const [lo, hi] = xDomain
@@ -221,8 +221,8 @@ function ScatterMarks({
           {/* Which way the axis reads. Neither variable is self-evidently
               directional, and 'more vulnerable to the right' is the whole point. */}
           <g className="scatter-marks__ends" pointerEvents="none">
-            <text x={0} y={height + 46} textAnchor="start">← {xVar.ends[0]}</text>
-            <text x={width} y={height + 46} textAnchor="end">{xVar.ends[1]} →</text>
+            <text x={0} y={height + 74} textAnchor="start">← {xVar.ends[0]}</text>
+            <text x={width} y={height + 74} textAnchor="end">{xVar.ends[1]} →</text>
           </g>
         </motion.g>
       </AnimatePresence>
@@ -300,7 +300,7 @@ function ScatterMarks({
 }
 
 /** Horizontal ASR cutoff. ASR = 100 is omitted by the caller when this
- *  method never reaches it — grandfathering and egalitarian stay below. */
+ *  method never reaches it: grandfathering and egalitarian stay below. */
 function FairMark({ y: py, width, height, label, kind = 'one' }) {
   const hi = kind === 'hi'
   const labelY = py < 14 ? Math.min(py + 12, height - 2) : py - 5

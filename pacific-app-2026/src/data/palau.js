@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useData } from './useData'
 
 /**
- * `palau_context.json` — the indicators on which Palau is an outlier among its
+ * `palau_context.json`: the indicators on which Palau is an outlier among its
  * own neighbours, written by 08_palau_context.ipynb. Each record carries every
  * island's value plus Palau's rank, the peer median and a robust z.
  *
@@ -19,7 +19,7 @@ export const CONTEXT_URL = `${BASE}data/palau_context.json`
  * that shows where Palau stands on it, and what that reads as.
  *
  * The explanations that do not fit come first on purpose. A line-up where
- * every suspect is guilty is not a case — it is a chart of one country's
+ * every suspect is guilty is not a case. It is a chart of one country's
  * superlatives. The tourism row is what makes the four below it worth
  * believing.
  *

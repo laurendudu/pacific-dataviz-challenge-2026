@@ -20,9 +20,9 @@ const FADE = {
 const STAGES = ['well', 'mint', 'gold']
 
 const CAPTIONS = [
-  'The black well edge to the red dashed ring is ASR = 1 — one fair share.',
+  'The black well edge to the red dashed ring is ASR = 1: one fair share.',
   'Mint is the stretch from that well edge to the ring: emissions still within the share.',
-  `Past the ring the radius is log₁₀. Gold is overshoot — here, ASR ${GUIDE_ASR}.`,
+  `Past the ring the radius is log₁₀. Gold is overshoot: here, ASR ${GUIDE_ASR}.`,
 ]
 
 const ASR_FOR_STAGE = {
@@ -34,7 +34,7 @@ const ASR_FOR_STAGE = {
 export const ASR_VIZ_BEAT_COUNT = STAGES.length
 
 /**
- * How to read an ASR disc. Follows the global fraction — the number the
+ * How to read an ASR disc. Follows the global fraction: the number the
  * reader just watched appear, drawn as the first disc they meet. Scroll
  * grows the wash; mint then gold are named only once each colour is on the page.
  */

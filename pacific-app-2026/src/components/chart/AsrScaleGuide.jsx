@@ -17,12 +17,11 @@ import {
 /**
  * How to read an ASR disc, drawn rather than described.
  *
- * The disc is a real one, rendered by the same `AsrDisc` it explains — so the
- * diagram cannot drift from the component. Its radius is unrolled into a
- * straight ruler: one continuous log₁₀ from the well edge (`ASR_FLOOR`) out
- * to the country's ASR. Mint is the stretch from the black well stroke to
- * ASR 1; gold is past that red dashed ring. The disc in the well is the
- * glyph, not a legend key.
+ * The disc is a real one, rendered by the same `AsrDisc` it explains, so the
+ * diagram cannot drift from the component. The wash is unrolled from the
+ * black well stroke (`ASR_FLOOR`) out to the country's ASR. The country
+ * inside the well is the glyph, not a length on the scale. Mint is that
+ * stretch to ASR 1; gold is past the red dashed ring.
  *
  * `stage` lets the parent grow the wash: `well` is the well stroke and the
  * 1-ring, `mint` fills to the fair share, `gold` overshoots. `all` is the
@@ -35,7 +34,7 @@ const WELL = 120
 const VB_W = 440
 const VB_H = 292
 
-/* Disc centre, and the ruler's baseline — both on the same y so the eye
+/* Disc centre, and the ruler's baseline: both on the same y so the eye
    carries the radius across. */
 const CX = 96
 const CY = 96
@@ -86,17 +85,18 @@ export function AsrScaleGuide({
   const g = useMemo(() => {
     const lo = Number.isFinite(floor) && floor > 0 ? floor : ASR_FLOOR
     const { rInner, rOne, rAsr } = asrRadii(WELL, asr, ringGap, lo)
-    const wellEnd = RULER_X + rInner
-    const oneEnd = RULER_X + rOne
-    const asrEnd = RULER_X + rAsr
+    /* Ruler origin is the black well stroke. The country core is not a length. */
+    const origin = RULER_X
+    const oneEnd = origin + (rOne - rInner)
+    const asrEnd = origin + (rAsr - rInner)
     /* Same mapping as `asrRadii`: floor→1 onto the mint band; D3 extrapolates. */
-    const along = scaleLog().domain([lo, 1]).range([wellEnd, oneEnd])
+    const along = scaleLog().domain([lo, 1]).range([origin, oneEnd])
     const logTicks = []
     for (const t of LOG_TICKS) {
       if (t <= lo || t >= asr * 0.9) continue
       const x = along(t)
       if (!Number.isFinite(x)) continue
-      if (x - wellEnd < TICK_MIN_PX) continue
+      if (x - origin < TICK_MIN_PX) continue
       const last = logTicks[logTicks.length - 1]
       if (last && x - last.x < TICK_MIN_PX) continue
       logTicks.push({ t, x })
@@ -105,7 +105,7 @@ export function AsrScaleGuide({
       rInner,
       rOne,
       rAsr,
-      wellEnd,
+      origin,
       oneEnd,
       asrEnd,
       logTicks,
@@ -119,7 +119,8 @@ export function AsrScaleGuide({
   const floorLabel = g.lo < 0.1 ? g.lo.toString() : round(g.lo)
   const mintW = g.rOne - g.rInner
   const goldW = Math.max(0, g.rAsr - g.rOne)
-  const frameW = hideFill ? g.rInner : g.rAsr
+  const washW = hideFill ? mintW : showGold ? mintW + goldW : mintW
+  const rOut = hideFill ? g.rInner : g.rAsr
 
   const moveTip = (event) => {
     const box = boxRef.current?.getBoundingClientRect()
@@ -162,19 +163,20 @@ export function AsrScaleGuide({
         onLeave={() => setTip(null)}
       />
 
-      {/* the radius being measured, marked on the disc */}
+      {/* the wash being measured: black well stroke outward, not through the core */}
       <g className="asr-guide__radius">
-        <motion.line
-          x1={CX}
-          y1={CY}
-          y2={CY}
-          initial={false}
-          animate={{ x2: CX + (hideFill ? g.rInner : g.rAsr) }}
-          transition={grow}
-        />
-        {[0, g.rInner, g.rOne].map((r) => (
-          <line key={r} x1={CX + r} y1={CY - 5} x2={CX + r} y2={CY + 5} />
-        ))}
+        {hideFill ? null : (
+          <motion.line
+            x1={CX + g.rInner}
+            y1={CY}
+            y2={CY}
+            initial={false}
+            animate={{ x2: CX + rOut }}
+            transition={grow}
+          />
+        )}
+        <line x1={CX + g.rInner} y1={CY - 5} x2={CX + g.rInner} y2={CY + 5} />
+        <line x1={CX + g.rOne} y1={CY - 5} x2={CX + g.rOne} y2={CY + 5} />
         {hideFill ? null : (
           <motion.line
             key="asr-tick"
@@ -204,22 +206,15 @@ export function AsrScaleGuide({
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
             transition={fade}
           >
-            <line x1={CX + g.rAsr + 8} y1={CY} x2={RULER_X - 8} y2={CY} />
-            <path d={`M${RULER_X - 14},${CY - 4} L${RULER_X - 8},${CY} L${RULER_X - 14},${CY + 4}`} />
+            <line x1={CX + rOut + 8} y1={CY} x2={g.origin - 8} y2={CY} />
+            <path d={`M${g.origin - 14},${CY - 4} L${g.origin - 8},${CY} L${g.origin - 14},${CY + 4}`} />
           </motion.g>
         ) : null}
       </AnimatePresence>
 
       <g className="asr-guide__bands">
-        <rect
-          className="asr-guide__band asr-guide__band--well"
-          x={RULER_X}
-          y={top}
-          width={g.rInner}
-          height={BAND_H}
-        />
         <motion.rect
-          x={g.wellEnd}
+          x={g.origin}
           y={top}
           height={BAND_H}
           fill={ASR_FILL_UNDER}
@@ -240,11 +235,11 @@ export function AsrScaleGuide({
         />
         <motion.rect
           className="asr-guide__band-frame"
-          x={RULER_X}
+          x={g.origin}
           y={top}
           height={BAND_H}
           initial={false}
-          animate={{ width: frameW }}
+          animate={{ width: washW }}
           transition={grow}
         />
       </g>
@@ -258,7 +253,7 @@ export function AsrScaleGuide({
         y2={bottom + 8}
       />
       <text className="asr-guide__tick" x={g.oneEnd} y={top - 30} textAnchor="middle">
-        ASR 1 — the fair share
+        ASR = 1: the allocated share of the budget
       </text>
       <AnimatePresence initial={false}>
         {showGold ? (
@@ -295,7 +290,7 @@ export function AsrScaleGuide({
               exit={{ opacity: 0 }}
               transition={fade}
             >
-              <Bracket x1={g.wellEnd} x2={g.oneEnd} y={bottom + 12} />
+              <Bracket x1={g.origin} x2={g.oneEnd} y={bottom + 12} />
             </motion.g>
           ) : null}
         </AnimatePresence>
@@ -319,7 +314,7 @@ export function AsrScaleGuide({
           {showMint ? (
             <motion.path
               key="mint-leader"
-              d={`M${mid(g.wellEnd, g.oneEnd)},${bottom + 26} V${ROW_UNDER} H${ROW_END + 6}`}
+              d={`M${mid(g.origin, g.oneEnd)},${bottom + 26} V${ROW_UNDER} H${ROW_END + 6}`}
               initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -401,7 +396,7 @@ function mid(a, b) {
 }
 
 function round(n) {
-  return Number.isFinite(n) ? Math.round(n * 10) / 10 : '—'
+  return Number.isFinite(n) ? Math.round(n * 10) / 10 : '–'
 }
 
 function tickLabel(t) {
@@ -414,7 +409,7 @@ function ariaForStage({ stage, asrLabel, floorLabel, ringGap, hideFill }) {
     return `The black well edge to the red dashed ring is ASR 1, one fair share.`
   }
   if (stage === 'mint') {
-    return `Mint shade grows from the black well edge to the red dashed ring at ASR 1 — still within the fair share.`
+    return `Mint shade grows from the black well edge to the red dashed ring at ASR 1, still within the fair share.`
   }
   return (
     `How to read an ASR disc. Mint shade runs from the black well edge to the red `

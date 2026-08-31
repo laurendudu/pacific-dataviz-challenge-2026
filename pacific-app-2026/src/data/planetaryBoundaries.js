@@ -1,5 +1,5 @@
 /**
- * Nine planetary boundaries, clockwise from 12 o'clock — Stockholm Resilience
+ * Nine planetary boundaries, clockwise from 12 o'clock, Stockholm Resilience
  * Centre / PIK order.
  *
  * Source: Planetary Health Check 2025 (PBScience / Potsdam Institute for
@@ -24,8 +24,8 @@ export const PLANETARY_BOUNDARY = 1
 export const HIGH_RISK = 1.5
 
 /**
- * `direction: 'up'` — the control variable rises as the pressure worsens.
- * `direction: 'down'` — it falls (forest cover, aragonite, ozone).
+ * `direction: 'up'`: the control variable rises as the pressure worsens.
+ * `direction: 'down'`: it falls (forest cover, aragonite, ozone).
  */
 const CONTROL_VARIABLES = {
   co2: {
@@ -166,7 +166,7 @@ export function normalize(cv) {
 
 /**
  * `zone` is the process-level assessment printed in PHC 2025 fig. ES 1. For a
- * process measured by two control variables the wedge shows `primary` — the
+ * process measured by two control variables the wedge shows `primary`, the
  * one that drives the process into its zone, so length and colour agree.
  * Climate change is therefore drawn on radiative forcing (+2.97 W/m² against
  * a +1.5 high-risk line); CO₂ at 423 ppm is the softer of the two and belongs
@@ -196,7 +196,7 @@ const NAMES = {
   biosphere: 'Change in biosphere integrity',
 }
 
-/** Novel entities is transgressed but unquantified — placed mid high-risk. */
+/** Novel entities is transgressed but unquantified, placed mid high-risk. */
 const NOVEL_ENTITIES_VALUE = 1.8
 
 export const BOUNDARIES = PROCESSES.map((p) => {
@@ -212,7 +212,7 @@ export const BOUNDARIES = PROCESSES.map((p) => {
   }
 })
 
-/** Outer end of the radial scale — the longest wedge, nitrogen at ~3.6. */
+/** Outer end of the radial scale: the longest wedge, nitrogen at ~3.6. */
 export const SCALE_MAX = Math.max(...BOUNDARIES.map((b) => b.value))
 
 export function statusOf(boundary) {

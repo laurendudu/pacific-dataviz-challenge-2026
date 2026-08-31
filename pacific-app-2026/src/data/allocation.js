@@ -1,7 +1,7 @@
 /**
  * Three L1 rules that turn a world carrying capacity into a country share.
  * ASR tables: egalitarian `asr.json`, grandfathering `asr_gf.json`,
- * prioritarian `asr_gdp.json` — all min_cc from notebook 03.
+ * prioritarian `asr_gdp.json`, all min_cc from notebook 03.
  */
 
 export const PACIFIC_BUDGET_ASK =

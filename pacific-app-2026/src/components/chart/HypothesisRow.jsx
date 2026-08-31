@@ -8,8 +8,8 @@ import { ChartFrame } from './ChartFrame'
  * own log axis, with Palau marked and the peer median ticked.
  *
  * The row is deliberately the *same* shape every time it is used. Five rows of
- * one form let the reader see a pattern — Palau pinned to the right edge, then
- * one row where it is not — which four different chart types would hide.
+ * one form let the reader see a pattern (Palau pinned to the right edge, then
+ * one row where it is not), which four different chart types would hide.
  *
  * Each row carries its own scale because the units are not comparable
  * (kWh, tonnes, MJ per dollar). What is comparable is the position of one
@@ -18,7 +18,7 @@ import { ChartFrame } from './ChartFrame'
 
 const MARGIN = { top: 6, right: 12, bottom: 16, left: 12 }
 const R = 5.5
-/* The hit target is bigger than the mark — a 5px dot is a hard thing to catch
+/* The hit target is bigger than the mark: a 5px dot is a hard thing to catch
    with a mouse, and an impossible one with a thumb. */
 const HIT = 13
 
@@ -118,7 +118,7 @@ function Strip({ width, height, indicator, format, showEnds, hovered, onHover })
         )
       })}
 
-      {/* Direction is spelled out once, on the first row — after that the
+      {/* Direction is spelled out once, on the first row. After that the
           reader knows which way the axis runs. */}
       {showEnds ? (
         <g className="hyp__ends">

@@ -26,7 +26,7 @@ const formatRatio = format('.1f')
  * d3-force only computes x/y; React draws every circle.
  */
 function formatSharePct(pct) {
-  if (pct == null || Number.isNaN(pct)) return '—'
+  if (pct == null || Number.isNaN(pct)) return '–'
   if (Math.abs(pct) >= 10) return pct.toFixed(1)
   if (Math.abs(pct) >= 1) return pct.toFixed(2)
   return Number(pct).toPrecision(2)
@@ -458,7 +458,7 @@ function fractionSlots(width, height, stacked) {
 
   const leftX = Math.max(48, width * 0.055)
 
-  /* Slot size is the centred pack — shift only translates, never re-packs. */
+  /* Slot size is the centred pack: shift only translates, never re-packs. */
   return {
     num: { x: centeredX, y: top, w: packW, h: numH },
     den: { x: centeredX, y: barY + gap, w: packW, h: denH },

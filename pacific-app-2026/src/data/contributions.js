@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 
 /**
  * Each country's share of world greenhouse gas emissions in a single year,
- * as a percentage — notebook 04's `contributions.json`.
+ * as a percentage: notebook 04's `contributions.json`.
  *
  * Keyed for the map by `iso_n3`, ISO 3166-1 numeric, which is the id
  * world-atlas already puts on its features, so the join needs no name
@@ -19,7 +19,7 @@ export function useContributions() {
     let cancelled = false
     fetch(URL)
       .then((res) => {
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${URL}`)
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${URL}`)
         return res.json()
       })
       .then((data) => { if (!cancelled) setState({ data, error: null }) })
@@ -36,7 +36,7 @@ export function useContributions() {
     return new Map(data.countries.map((c) => [c.iso_n3, c.share_pct]))
   }, [data])
 
-  /* Full records keyed by iso3 — the allocation metric needs emissions and
+  /* Full records keyed by iso3: the allocation metric needs emissions and
      population, not just the share the globe colours by. */
   const rows = useMemo(() => {
     if (!data) return null

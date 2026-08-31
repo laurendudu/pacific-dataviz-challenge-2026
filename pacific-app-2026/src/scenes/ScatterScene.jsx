@@ -42,16 +42,16 @@ function scrollToXBeat(beat) {
  *
  * The page's claim is about the rules, not the Pacific: an allocation rule is
  * what decides whether a carbon budget can distinguish between countries at
- * all. Grandfathering cannot — it returns one ratio for all 188, so the
+ * all. Grandfathering cannot: it returns one ratio for all 188, so the
  * Marshall Islands and Saudi Arabia are equally over and equally guilty, which
  * is what a single standard applied to unequal countries buys you. The other
- * two rules fan the same countries out — 825-fold on population, 20,000-fold
- * on ability to pay — and it is that spread that makes a budget capable of
+ * two rules fan the same countries out (825-fold on population, 20,000-fold
+ * on ability to pay), and it is that spread that makes a budget capable of
  * being fair to anyone.
  *
  * Scroll names the x axis, in the order the argument runs: who the harm
  * lands on, who caused it, who can afford to act. Exposure and disaster loss
- * sort by the first of those, and the Pacific sits far right and low — in
+ * sort by the first of those, and the Pacific sits far right and low: in
  * the way of it, overshooting least. Emissions share and fossil rents sort
  * by who caused it and who was paid for it, and the Pacific collapses into
  * the left margin. GDP per capita is the control: sorted by capacity to act
@@ -75,10 +75,13 @@ function ScatterView({ beat }) {
   const [pinnedIso, setPinnedIso] = useState(null)
   const [previewIso, setPreviewIso] = useState(null)
   const [picked, setPicked] = useState(null)
+  const [maxReached, setMaxReached] = useState(0)
   const { countries } = useScatterCountries()
 
   const allUnlocked = beat >= X_VARS.length
   const scrolledId = X_VARS[Math.min(beat, X_VARS.length - 1)].id
+  if (beat > maxReached) setMaxReached(beat)
+  const revealedUntil = Math.max(beat, maxReached)
 
   useEffect(() => {
     if (!allUnlocked) setPicked(null)
@@ -128,7 +131,7 @@ function ScatterView({ beat }) {
   return (
     <div ref={rootRef} className="scatter">
       <div className="scatter__captions">
-        <p className="scatter__caption">Pacific vs the world</p>
+        <p className="scatter__caption">Redistributing the responsibility to reduce GHG emissions</p>
         <p className="scatter__lede">
           By changing allocation principles, we can see that the allocated shares are attributed in a fairer manner, especially for countries
           and terriories that are more vulnerable to climate change, emit less, and have less capacity to act. 
@@ -136,7 +139,8 @@ function ScatterView({ beat }) {
         </p>
       </div>
 
-      <div className="scatter__controls" role="group" aria-label="Country search and horizontal axis">
+      <div className="scatter__controls" role="group" aria-label="Plotting ASR as a function of the horizontal axis">
+        <span className="scatter__axis-lead">Plotting ASR as a function of</span>
         <AnimatePresence initial={false}>
           {countries.length > 0 ? (
             <motion.div
@@ -157,7 +161,7 @@ function ScatterView({ beat }) {
               />
             </motion.div>
           ) : null}
-          {X_VARS.filter((_, i) => allUnlocked || i <= beat).map((v) => {
+          {X_VARS.filter((_, i) => allUnlocked || i <= revealedUntil).map((v) => {
             const i = X_VARS.indexOf(v)
             return (
               <motion.button
@@ -241,12 +245,12 @@ function ScatterView({ beat }) {
               {pinnedIso === hovered.iso ? ' · pinned' : ''}
               {' · '}
               {xVar.short}{' '}
-              {xOf(hovered, xVarId) == null ? '—' : xVar.format(xOf(hovered, xVarId))}
+              {xOf(hovered, xVarId) == null ? '–' : xVar.format(xOf(hovered, xVarId))}
             </span>
             <span>
               {SCATTER_PLOTS.map((plot) => {
                 const value = asrOf(hovered, plot.id)
-                return `${plot.title} ${value == null ? '—' : formatAsr(value)}`
+                return `${plot.title} ${value == null ? '–' : formatAsr(value)}`
               }).join(' · ')}
             </span>
           </motion.div>

@@ -3,7 +3,7 @@
  * the scatter cannot disagree about who they are.
  *
  * Chosen on the measure this project is actually about: **share of the world's
- * overshoot** — tonnes emitted above a fair share since 2000, summed over a
+ * overshoot**: tonnes emitted above a fair share since 2000, summed over a
  * country's population, as a percentage of every country's overshoot added up.
  * It is the only ranking that counts both how far past a fair share a country
  * lives and how many people live there, which is what the ASR panels are
@@ -16,11 +16,11 @@
  * Three more are here by name and not by that rule:
  *
  *   Australia (16th) is the Pacific's neighbour and the region's largest
- *   economy, and it overshoots by 20× per person — leaving it out would let
+ *   economy, and it overshoots by 20× per person. Leaving it out would let
  *   the reader miss who is standing next to the islands.
  *   France (26th) administers two of the territories in this story, New
  *   Caledonia and French Polynesia, so its footprint is part of the Pacific's.
- *   Qatar (34th) is the extreme of per-person overshoot — small enough to
+ *   Qatar (34th) is the extreme of per-person overshoot: small enough to
  *   cause little of the total, far enough past a fair share to mark the
  *   other end of the scale from the islands.
  *

@@ -23,7 +23,7 @@ const GREY_FILL = '#cfc9e4'
 const GREY_STROKE = '#a79ec6'
 const WEDGE_STROKE = '#6e6688'
 
-/* Zone colours — radial bands, not per-boundary hues. */
+/* Zone colours: radial bands, not per-boundary hues. */
 const ZONE_GREEN = '#35ce84'
 const ZONE_ORANGE = '#ffb13d'
 const ZONE_RED = '#ff5a5f'
@@ -43,13 +43,13 @@ export const WEDGE_COLOR = { from: 0.60, to: 0.68 }
 
 /**
  * Caption windows, keyed to the visual beats so they cannot drift.
- * They abut — outgoing fades out, incoming fades in — so two lines
+ * They abut (outgoing fades out, incoming fades in) so two lines
  * never sit stacked in the same slot.
  */
 export const LIMITS_CAPTION = { from: 0.04, to: WEDGE_LINES.from }
 export const SOS_CAPTION = { from: WEDGE_LINES.from, to: WEDGE_COLOR.from }
 
-/** 7-of-9 caption — starts as the wedges colorize; full colour, no climate dim. */
+/** 7-of-9 caption: starts as the wedges colorize; full colour, no climate dim. */
 export const SEVEN_CROSSED = { from: WEDGE_COLOR.from, to: 0.80 }
 
 /** Climate caption and wedge-focus share this window so they cannot drift. */
@@ -164,7 +164,7 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         </radialGradient>
       </defs>
 
-      {/* Safe operating space — fills the earth circle once the legend lands. */}
+      {/* Safe operating space: fills the earth circle once the legend lands. */}
       <circle
         cx={cx}
         cy={cy}
@@ -195,7 +195,7 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         ) : null,
       )}
 
-      {/* Earth / planetary-boundary circle — always on, from the first beat. */}
+      {/* Earth / planetary-boundary circle: always on, from the first beat. */}
       <circle
         cx={cx}
         cy={cy}

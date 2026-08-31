@@ -16,7 +16,7 @@ import { Timeline, useChartTimeline } from './components/scroll/Timeline'
 
 /**
  * `?p=0.45` freezes the *globe* at that scroll progress and renders it
- * full-viewport with no pinning — handy for eyeballing a single beat while
+ * full-viewport with no pinning, handy for eyeballing a single beat while
  * tuning the choreography. The swarm scene is a following section, so use
  * the normal site and scroll (or jump to `#budget` / `#asr-viz` /
  * `#allocation` / `#ranking` / `#pacific-vs-world` / `#palau` / `#colophon`).
@@ -57,7 +57,7 @@ export default function App() {
 
 /**
  * Sidebar open/reveal live here so flipping shell classes does not re-render
- * Globe / Swarm / ASR — that re-render was a ~1s main-thread hitch.
+ * Globe / Swarm / ASR: that re-render was a ~1s main-thread hitch.
  * Open = slid in after morph (invisible). Reveal = fade with legend/sentence.
  */
 function ShellSidebar({ globeProgress, frozen }) {

@@ -2,7 +2,7 @@ import { PlanetaryBoundaries, schemaEarthRadius } from '../components/chart/Plan
 import { ChartFrame } from '../components/chart/ChartFrame'
 
 /**
- * Planetary boundaries radial — D3 for arcs and radius, JSX for every mark.
+ * Planetary boundaries radial: D3 for arcs and radius, JSX for every mark.
  */
 export function Act1Boundaries({ progress = 1 }) {
   return (

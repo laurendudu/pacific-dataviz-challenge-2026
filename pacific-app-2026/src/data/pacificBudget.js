@@ -5,7 +5,7 @@ import { PACIFIC_TERRITORIES } from './allocation'
  *
  * ASR = emissions / allocated carrying capacity, so the allocation is just
  * `emissions / ASR`. Summed over the whole panel every table returns 6800 Mt
- * — the world min_cc — so the inversion is exact, not an estimate.
+ * (the world min_cc), so the inversion is exact, not an estimate.
  *
  * Scale note: the budget swarm upstream draws 0.1 Gt to a dot, and the
  * Pacific's entire entitlement is a fraction of one of those dots. So this
@@ -28,7 +28,7 @@ export function allocatedMt(emissionsMt, asr) {
 /**
  * The Pacific total under one rule, plus the emissions of exactly the
  * territories that rule can score. Prioritarian has no PPP GDP for New
- * Caledonia or French Polynesia, so its coverage is 12 of the 14 — and its
+ * Caledonia or French Polynesia, so its coverage is 12 of the 14, and its
  * percentage is measured against those same 12, never against all 14.
  *
  * @param {Map<string, object>} rows   iso3 → contributions.json country record
@@ -74,7 +74,7 @@ export function pacificAllocation(rows, values) {
 }
 
 /**
- * The world budget the rule actually divides, in megatonnes — the sum of
+ * The world budget the rule actually divides, in megatonnes: the sum of
  * every allocation it can score. Read off the table rather than assumed, so
  * prioritarian's renormalisation over its smaller panel stays exact.
  */

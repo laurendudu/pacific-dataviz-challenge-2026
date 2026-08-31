@@ -10,7 +10,7 @@ import { SWARM_ASR_BEAT, SWARM_BEAT_COUNT } from '../../scenes/SwarmScene'
 
 /**
  * Charts that already have a real page on the site. Add a row when a new
- * beat lands — schema pies stay off this list until they are their own chart.
+ * beat lands. Schema pies stay off this list until they are their own chart.
  */
 export const CHARTS = [
   {
@@ -36,7 +36,7 @@ export const CHARTS = [
   },
   {
     id: 'allocation',
-    label: 'Allocation across the Pacific',
+    label: 'Allocating the budget to the Pacific',
     target: { type: 'hash', id: 'allocation' },
   },
   {
@@ -46,7 +46,7 @@ export const CHARTS = [
   },
   {
     id: 'pacific-vs-world',
-    label: 'Pacific vs the world',
+    label: 'Redistributing the responsibility',
     target: { type: 'hash', id: 'pacific-vs-world' },
   },
   {
@@ -160,7 +160,7 @@ export function useChartTimeline({ globeProgress = null, frozen = false } = {}) 
     () => getOpeningGate() || (globeProgress != null && openingMorphDone(globeProgress)),
   )
   const [activeId, setActiveId] = useState(() => readActiveChartId())
-  /* Grows only — scrolling back must not hide a milestone already earned. */
+  /* Grows only: scrolling back must not hide a milestone already earned. */
   const [revealedCount, setRevealedCount] = useState(
     () => chartIndex(readActiveChartId()) + 1,
   )
@@ -217,7 +217,7 @@ export function Timeline({
     skipEnter.current = false
   }, [])
 
-  /* Always mounted — the shell panel itself slides in. Remounting via
+  /* Always mounted: the shell panel itself slides in. Remounting via
      AnimatePresence during the handoff competed with the globe for frames. */
   return (
     <nav

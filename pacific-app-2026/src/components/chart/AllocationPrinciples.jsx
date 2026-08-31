@@ -11,9 +11,9 @@ const FRAME = asrRadii(SIZE, 1).rOne
 
 const formatMt = format('.3~r')
 
-/** 0.053 rather than 0.05 — three decimals keeps all three rules legible. */
+/** 0.053 rather than 0.05: three decimals keeps all three rules legible. */
 function formatBudgetPct(pct) {
-  if (pct == null || !Number.isFinite(pct)) return '—'
+  if (pct == null || !Number.isFinite(pct)) return '–'
   return pct < 1 ? pct.toFixed(3) : pct.toFixed(2)
 }
 
@@ -38,7 +38,7 @@ function allocationFigures(principle, result, worldMt) {
 
 /**
  * One allocation rule at a time: a headline and definition on the left,
- * every Pacific territory on the right — a Pacific map of ASR discs, or
+ * every Pacific territory on the right: a Pacific map of ASR discs, or
  * AsrCountry glyphs if `visual="grid"`. Wells are empty rings (`land={false}`),
  * matching the first globe disc: ink stroke, no country silhouette. D3 stays
  * inside the child charts; this file only composes.

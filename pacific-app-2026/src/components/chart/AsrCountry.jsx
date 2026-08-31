@@ -30,7 +30,7 @@ function radiusScale(gap, floor) {
 
 const formatAsr = format('.2~f')
 
-/** Spare tooltip copy — name, ASR, and which side of the ring. */
+/** Spare tooltip copy: name, ASR, and which side of the ring. */
 export function asrHoverCopy({ name, asr, hideFill = false }) {
   const asrLabel = !hideFill && Number.isFinite(asr) ? formatAsr(asr) : null
   let status = null
@@ -66,7 +66,7 @@ export function AsrTooltip({ tip }) {
 }
 
 /** Mint: ASR ≤ 1. Gold: ASR > 1. Exported so legends stay on the same inks.
- *  These mirror --asr-* in tokens.css — change both or the legends drift.
+ *  These mirror --asr-* in tokens.css. Change both or the legends drift.
  *  Bright enough to survive the 0.26 disc wash; the -INK twins carry the
  *  legend words, which the pop fills are far too light to do. */
 export const ASR_FILL_UNDER = '#23c29a'
@@ -83,13 +83,13 @@ const LAND_STROKE = '#2c2545'
  *
  * From the well edge, radius is log(asr / floor) / log(1 / floor) times
  * `ringGap`. ASR = floor sits on the well; ASR = 1 lands on the red dashed
- * ring; everything past 1 continues on the same log — Palau at ~100 is two
+ * ring; everything past 1 continues on the same log: Palau at ~100 is two
  * decades past the ring, not ninety-nine linear pixels out.
  *
  * The ring is a labelled mark, not a scale break. Read a disc as under or
- * over that mark — not as a ratio of areas.
+ * over that mark, not as a ratio of areas.
  *
- * `rAsr = rInner + grown` — never `rOne * asr`. D3 (`scaleLog`) produces
+ * `rAsr = rInner + grown`, never `rOne * asr`. D3 (`scaleLog`) produces
  * the grown length.
  */
 export function asrRadii(size, asr, ringGap = ASR_RING_GAP, floor = ASR_FLOOR) {
@@ -119,7 +119,7 @@ function landPathString(feature, cx, cy, rInner) {
   return geoPath(projection)(feature)
 }
 
-/** Orthographic land, clipped to the well — Earth, not a stand-in country. */
+/** Orthographic land, clipped to the well: Earth, not a stand-in country. */
 function worldLandPath(cx, cy, rInner) {
   if (!WORLD_LAND) return null
   const pad = Math.max(2, rInner * 0.06)
@@ -135,14 +135,14 @@ function worldLandPath(cx, cy, rInner) {
  * Concentric ASR marks at an SVG point. D3 only produces the land `d` and
  * the radii; every mark is JSX. Used by `AsrCountry` and the Pacific map.
  *
- * The inner disc is the country well — paper, no shade. A red dashed ring
+ * The inner disc is the country well: paper, no shade. A red dashed ring
  * `ringGap` px out is ASR = 1, a mark on a continuous log₁₀ radius from
  * `ASR_FLOOR`. The emission wash is a ring from the well edge. `hideFill`
  * keeps the 1-ring and drops the wash.
  *
  * A transparent hit circle covers `max(rAsr, rOne)` so the well is not the
  * only target when the wash is a thin ring. Hover itself is JSX in the
- * parent — this only reports pointer events.
+ * parent. This only reports pointer events.
  */
 export function AsrDisc({
   cx,
@@ -221,13 +221,6 @@ export function AsrDisc({
         ) : null}
       </defs>
 
-      <circle
-        className="asr-country__well"
-        cx={cx}
-        cy={cy}
-        r={geom.rInner}
-      />
-
       <AnimatePresence initial={false}>
         {showFill ? (
           <motion.circle
@@ -248,6 +241,15 @@ export function AsrDisc({
           />
         ) : null}
       </AnimatePresence>
+
+      {/* Well sits on top of the wash so gold/mint never paint the country core.
+          The shade is only the ring from this black stroke outward. */}
+      <circle
+        className="asr-country__well"
+        cx={cx}
+        cy={cy}
+        r={geom.rInner}
+      />
 
       {geom.d ? (
         <path
@@ -292,7 +294,7 @@ export function AsrDisc({
  * One country's allocated-share ratio, drawn as concentric circles.
  *
  * The inner disc is the country well (land clipped to the circle, outlined
- * by a black stroke) — no emission colour inside it. A red dashed ring
+ * by a black stroke): no emission colour inside it. A red dashed ring
  * `ringGap` px out is ASR = 1, a mark on a continuous log₁₀ radius from
  * `ASR_FLOOR`. The wash is a ring from the well edge.
  *
@@ -308,12 +310,12 @@ export function AsrDisc({
  * @param {number} [props.frameRadius]  SVG radius; defaults to max(rAsr, rOne)
  * @param {'cell'|'shared'} [props.fit='cell']
  *   `cell` sizes/clips the frame to the disc (fair-share scene).
- *   `shared` keeps a 1-ring viewBox and lets rAsr overflow — same pixel
+ *   `shared` keeps a 1-ring viewBox and lets rAsr overflow: same pixel
  *   scale across a grid.
  * @param {boolean} [props.caption=true]
  * @param {boolean|'world'} [props.land=true]
  *   `true` looks up a country outline. `false` is a well with no land.
- *   `'world'` draws an orthographic Earth — not a fake ISO country.
+ *   `'world'` draws an orthographic Earth, not a fake ISO country.
  * @param {boolean} [props.hideFill=false]  wells + ASR = 1 ring, no shade
  */
 export function AsrCountry({
@@ -333,7 +335,7 @@ export function AsrCountry({
   const [tip, setTip] = useState(null)
   const shared = fit === 'shared'
   const ratio = Number(asr)
-  const asrLabel = Number.isFinite(ratio) ? formatAsr(ratio) : '—'
+  const asrLabel = Number.isFinite(ratio) ? formatAsr(ratio) : '–'
   const showAsr = !hideFill && Number.isFinite(ratio)
   const title = showAsr ? `${name}, allocated-share ratio ${asrLabel}` : name
   const copy = asrHoverCopy({ name, asr: ratio, hideFill })

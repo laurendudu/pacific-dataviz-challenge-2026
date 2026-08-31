@@ -19,13 +19,13 @@ const BTN_FADE = {
 
 /**
  * Follows the world-disc scale guide. Arrival is the Pacific with no
- * ratios plotted — wells and the ASR = 1 ring only. Scroll names the
+ * ratios plotted: wells and the ASR = 1 ring only. Scroll names the
  * three rules one beat at a time. After all three unlock, the same frames
  * are reachable from the toggles.
  */
 export function AllocationScene() {
   const tables = useAsrTables(YEAR)
-  /* Emissions and population per territory — the allocation metric inverts
+  /* Emissions and population per territory: the allocation metric inverts
      the ASR against them to recover the entitlement in megatonnes. */
   const { rows } = useContributions()
 

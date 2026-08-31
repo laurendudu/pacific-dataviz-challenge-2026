@@ -55,7 +55,7 @@ function Lineup({
     ? Math.round(clamp((progress - 0.05) / 0.62, 0, 1) * rows.length)
     : 0
 
-  /* Union of islands actually drawn — Pacific-only, same set as the strips. */
+  /* Union of islands actually drawn: Pacific-only, same set as the strips. */
   const searchItems = useMemo(() => islandsFromRows(rows), [rows])
   const pictByIso = useMemo(
     () => new Map(searchItems.map((d) => [d.iso, d.pict])),
@@ -147,7 +147,7 @@ function Lineup({
       ) : null}
       <footer className="palau__close">
         <p>
-          Sources: Pacific Data Hub .Stat — <code>DF_CLIMATE_CHANGE</code>,{' '}
+          Sources: Pacific Data Hub .Stat, <code>DF_CLIMATE_CHANGE</code>,{' '}
           <code>DF_ENERGY</code>, <code>DF_WASTE</code>,{' '}
           <code>DF_TOURISM_ARRIVALS</code>, <code>DF_POP_PROJ</code>,{' '}
           <code>DF_WBWDI</code>. Ranks are Pacific-only. Method and code:{' '}
@@ -159,7 +159,7 @@ function Lineup({
 }
 
 /**
- * Hovering any dot names that island in every row at once — which is how a
+ * Hovering any dot names that island in every row at once, which is how a
  * reader checks the claim instead of taking it: follow Fiji down the list and
  * watch it stay in the middle.
  */
@@ -199,7 +199,7 @@ function islandsFromRows(rows) {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 
-/** One formatter for every row — the units differ, the reading habit shouldn't. */
+/** One formatter for every row: the units differ, the reading habit shouldn't. */
 function format(v) {
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
   if (v >= 10) return v.toFixed(0)

@@ -1,5 +1,5 @@
 /**
- * Axes built by hand from scale.ticks() — d3-axis is banned in this project
+ * Axes built by hand from scale.ticks(): d3-axis is banned in this project
  * (it renders via d3-selection). D3 supplies the tick VALUES and the scale
  * function; React draws every line and label.
  */
@@ -25,7 +25,7 @@ export function AxisBottom({ scale, y, ticks: fixedTicks, tickCount = 5, tickFor
         </g>
       ))}
       {label ? (
-        <text className="axis__title" x={x1} y={36} textAnchor="end">
+        <text className="axis__title" x={x1} y={42} textAnchor="end">
           {label}
         </text>
       ) : null}

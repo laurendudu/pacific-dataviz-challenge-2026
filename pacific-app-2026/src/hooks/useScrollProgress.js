@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 
 /**
  * Returns [ref, progress] where progress runs 0 → 1 as the element travels
- * through the viewport — the engine behind every scroll-driven transition.
+ * through the viewport, the engine behind every scroll-driven transition.
  *
  * The value is *damped*: each frame it eases a fraction of the way toward
  * the true scroll position rather than snapping to it. That lag is what
@@ -71,7 +71,7 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
     }
 
     /* If scrollTo(0) lands on an already-zero scrollY, no scroll event fires
-       and a lagged progressRef would stick — poll while the tab is visible. */
+       and a lagged progressRef would stick. Poll while the tab is visible. */
     let watch = 0
     const watchKick = () => {
       if (Math.abs(target() - progressRef.current) > 0.0005) kick()
@@ -121,8 +121,8 @@ export function beatOpacity(progress, from, to) {
 /** Decelerate into place. */
 export const easeOut = (t) => 1 - Math.pow(1 - t, 3)
 
-/** Ease in and out — the Apple curve for a move that starts and ends at rest. */
+/** Ease in and out: the Apple curve for a move that starts and ends at rest. */
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
-/** Quintic smootherstep — same rest at both ends, without the cubic rush in the middle. */
+/** Quintic smootherstep: same rest at both ends, without the cubic rush in the middle. */
 export const easeInOutSmooth = (t) => t * t * t * (t * (t * 6 - 15) + 10)

@@ -81,7 +81,7 @@ svg { display: block; }
   box-sizing: border-box;
   box-shadow: inset -1px 0 0 var(--hairline);
   /* Parked off-screen until morph; slides in invisible, then JS fades opacity
-     with the Pacific sentence / legend — no transform tween (it fought the fade). */
+     with the Pacific sentence / legend, no transform tween (it fought the fade). */
   transform: translateX(-100%);
   opacity: 0;
   pointer-events: none;
@@ -189,7 +189,7 @@ svg { display: block; }
 }
 .ph__label { fill: var(--text-muted); font-family: var(--font-mono); font-size: 11px; }
 
-/* ── Axis (hand-built in JSX — never d3-axis) ────────────────────────────── */
+/* ── Axis (hand-built in JSX, never d3-axis) ────────────────────────────── */
 .axis__domain, .axis__tick-line { stroke: var(--axis-line); stroke-width: 1; }
 .axis__grid-line { stroke: var(--grid-line); stroke-width: 1; }
 .axis__label {
@@ -358,7 +358,7 @@ svg { display: block; }
   height: 8px;
   border-radius: 2px;
 }
-/* Ticks are positioned along the bar rather than spaced evenly — the scale is
+/* Ticks are positioned along the bar rather than spaced evenly: the scale is
    a power ramp, so even spacing would misreport where each share sits. */
 .globe__legend-ticks {
   position: relative;
@@ -1760,14 +1760,29 @@ svg { display: block; }
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  column-gap: 0.45rem;
+  row-gap: 0.45rem;
   margin-top: 0.85rem;
   padding-inline: var(--scene-pad-x);
   flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.scatter__axis-lead {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink-secondary);
+  line-height: 1.45;
+  white-space: nowrap;
 }
 .scatter__search {
   flex: 0 0 auto;
-  order: -1;
 }
 .scatter__controls .rank-search {
   margin-top: 0;
@@ -1784,7 +1799,7 @@ svg { display: block; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem 1.25rem;
-  padding: 0.4rem var(--scene-pad-x) 0;
+  padding: 0.2rem var(--scene-pad-x) 1.85rem;
 }
 .scatter-plot {
   display: flex;
@@ -1793,6 +1808,7 @@ svg { display: block; }
   min-height: 0;
   margin: 0;
   height: 100%;
+  max-height: 100%;
 }
 .scatter-plot__cap {
   flex: 0 0 auto;
@@ -1913,7 +1929,7 @@ svg { display: block; }
   z-index: 3;
   display: flex;
   justify-content: flex-start;
-  margin: 0.7rem 0 0;
+  margin: 0.35rem 0 0;
   padding-inline: var(--scene-pad-x);
   font-family: var(--font-sans);
   font-weight: 400;
@@ -2027,7 +2043,7 @@ svg { display: block; }
   box-sizing: border-box;
   --rank-pacific: var(--pacific);
   --rank-emitter: var(--emitter);
-  /* Small text never rides the pop fill — the deepened twin carries it. */
+  /* Small text never rides the pop fill: the deepened twin carries it. */
   --rank-pacific-ink: var(--pacific-ink);
   --rank-emitter-ink: var(--emitter-ink);
 }
@@ -2807,7 +2823,7 @@ svg { display: block; }
   color: var(--ink-muted);
   pointer-events: none;
 }
-/* The rows are not one vintage — DF_ENERGY publishes 2012 and 2019 only — so
+/* The rows are not one vintage (DF_ENERGY publishes 2012 and 2019 only), so
    each row states its own year rather than letting the headline imply one. */
 .hyp__year {
   padding-left: 0.35rem;
@@ -2878,7 +2894,7 @@ svg { display: block; }
   .hyp__strip { height: 3.2rem; }
 }
 
-/* Read-me line under the standfirst — what a dot is, before any dots appear. */
+/* Read-me line under the standfirst: what a dot is, before any dots appear. */
 .palau__legend {
   display: flex;
   align-items: center;
@@ -2958,7 +2974,7 @@ svg { display: block; }
 .palau__tooltip-rank { color: var(--ink-secondary); font-size: var(--step--2, 0.74rem); }
 
 /* ── Colophon: the last screen. Credits, sources, and the two links a reader
-   might actually want — the code, and a way to pass it on. ───────────────── */
+   might actually want: the code, and a way to pass it on. ───────────────── */
 .colophon {
   min-height: 100svh;
   display: grid;

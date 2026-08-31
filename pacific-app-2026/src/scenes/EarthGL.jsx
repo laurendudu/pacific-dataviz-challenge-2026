@@ -2,7 +2,7 @@ import { memo, useRef, useEffect } from 'react'
 import Globe from 'react-globe.gl'
 
 /**
- * Photoreal Earth for the opening leg — a globe.gl sphere with NASA imagery
+ * Photoreal Earth for the opening leg: a globe.gl sphere with NASA imagery
  * and a topography bump map. It carries no data layers.
  *
  * Camera motion is driven from refs on a dedicated rAF loop so the parent
@@ -13,12 +13,12 @@ import Globe from 'react-globe.gl'
  * orthographic projection. A narrow FOV at long distance is near-ortho,
  * so the two stay registered through the crossfade.
  *
- * `width` / `height` must stay constant through the opening handoff —
+ * `width` / `height` must stay constant through the opening handoff:
  * react-globe.gl resizes its canvas when they change. The parent freezes
  * the first viewport measure so an overlay sidebar cannot remount WebGL.
  */
 const NEAR_ORTHO_FOV = 6
-const SPIN_DEG_PER_MS = 0.002 // ≈ one turn / 3 min — slow enough to read
+const SPIN_DEG_PER_MS = 0.002 // ≈ one turn / 3 min, slow enough to read
 
 function altitudeForRadius(radius, height) {
   const target = radius / (height / 2)
@@ -80,7 +80,7 @@ export const EarthGL = memo(function EarthGL({
       if (wrapRef.current) {
         const ready = readyRef.current
         wrapRef.current.style.opacity = ready ? String(op) : '0'
-        /* Drop the compositor layer once faded — keeps WebGL alive without
+        /* Drop the compositor layer once faded: keeps WebGL alive without
            burning a full-screen canvas over the SVG crossfade. */
         wrapRef.current.style.visibility = ready && op >= 0.01 ? 'visible' : 'hidden'
       }

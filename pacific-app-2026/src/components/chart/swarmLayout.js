@@ -7,7 +7,7 @@ export const DOT_GAP = 2.5
  * Positions for `count` unit dots packed into a box.
  *
  * A phyllotaxis seed puts the dots in a rough disc, then d3-force settles the
- * overlaps. d3 only produces x/y here — the caller draws every circle in JSX.
+ * overlaps. d3 only produces x/y here. The caller draws every circle in JSX.
  */
 export function layoutSwarm({ count, width, height, radius, gap = DOT_GAP }) {
   if (count <= 0 || width <= 0 || height <= 0 || radius <= 0) return []

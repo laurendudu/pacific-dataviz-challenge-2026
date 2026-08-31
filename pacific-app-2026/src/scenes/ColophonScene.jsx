@@ -1,7 +1,7 @@
 /**
  * The last screen: who made it, what it was made from, where the code lives.
  *
- * Not a pinned scene — the reader has finished, and a colophon that fights
+ * Not a pinned scene: the reader has finished, and a colophon that fights
  * the scroll is a colophon nobody reaches the bottom of.
  */
 
@@ -31,11 +31,11 @@ const pdh = (id) =>
  */
 const DATA_GROUPS = [
   {
-    title: 'Pacific Data Hub — SPC .Stat (SDMX)',
+    title: 'Pacific Data Hub: SPC .Stat (SDMX)',
     items: [
       {
         links: [{ label: 'Climate Change indicators (DF_CLIMATE_CHANGE)', url: pdh('DF_CLIMATE_CHANGE') }],
-        use: 'GHG emissions per capita for the Pacific islands — the Pacific end of the fair-share maths',
+        use: 'GHG emissions per capita for the Pacific islands, the Pacific end of the fair-share maths',
       },
       {
         links: [{ label: 'SDG Goal 11 (DF_SDG_11)', url: pdh('DF_SDG_11') }],
@@ -43,11 +43,11 @@ const DATA_GROUPS = [
       },
       {
         links: [{ label: 'Energy indicators (DF_ENERGY)', url: pdh('DF_ENERGY') }],
-        use: 'installed capacity, electricity generated, fuel imports and primary energy — Palau’s outlier family',
+        use: 'installed capacity, electricity generated, fuel imports and primary energy (Palau’s outlier family)',
       },
       {
         links: [{ label: 'Tourist arrivals (DF_TOURISM_ARRIVALS)', url: pdh('DF_TOURISM_ARRIVALS') }],
-        use: 'visitor arrivals — Palau’s 5.3 visitors per resident, the ruled-out hypothesis',
+        use: 'visitor arrivals: Palau’s 5.3 visitors per resident, the ruled-out hypothesis',
       },
       {
         links: [{ label: 'Population projections (DF_POP_PROJ)', url: pdh('DF_POP_PROJ') }],
@@ -59,11 +59,11 @@ const DATA_GROUPS = [
       },
       {
         links: [{ label: 'Fisheries NMDI (DF_NMDI_FIS)', url: pdh('DF_NMDI_FIS') }],
-        use: 'marine area protected as a share of territorial waters — Palau’s counterpoint',
+        use: 'marine area protected as a share of territorial waters, Palau’s counterpoint',
       },
       {
         links: [{ label: 'World Development Indicators for the Pacific (DF_WBWDI)', url: pdh('DF_WBWDI') }],
-        use: 'energy intensity and forest cover — World Bank WDI republished by SPC for consistent Pacific coverage',
+        use: 'energy intensity and forest cover (World Bank WDI republished by SPC for consistent Pacific coverage)',
       },
     ],
   },
@@ -71,12 +71,12 @@ const DATA_GROUPS = [
     title: 'Read directly',
     items: [
       {
-        links: [{ label: 'Our World in Data — CO₂ and greenhouse gas emissions', url: 'https://github.com/owid/co2-data' }],
+        links: [{ label: 'Our World in Data: CO₂ and greenhouse gas emissions', url: 'https://github.com/owid/co2-data' }],
         use: 'total GHG emissions for every non-Pacific country (wrapping EDGAR and the Global Carbon Project)',
       },
       {
         links: [{ label: 'ND-GAIN Country Index (University of Notre Dame)', url: 'https://gain.nd.edu/our-work/country-index/download-data/' }],
-        use: 'climate exposure for 192 countries — the scatter’s headline x axis',
+        use: 'climate exposure for 192 countries, the scatter’s headline x axis',
       },
       {
         links: [{ label: 'UN SDG Global Database, indicator 11.5.2', url: 'https://unstats.un.org/sdgs/dataportal' }],
@@ -89,7 +89,7 @@ const DATA_GROUPS = [
           { label: 'coal', url: 'https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS' },
           { label: 'gas', url: 'https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS' },
         ],
-        use: 'rents as a share of GDP, summed — who was paid for the overshoot',
+        use: 'rents as a share of GDP, summed: who was paid for the overshoot',
       },
     ],
   },
@@ -98,11 +98,11 @@ const DATA_GROUPS = [
     items: [
       {
         links: [{ label: 'World Bank World Development Indicators', url: 'https://databank.worldbank.org/source/world-development-indicators' }],
-        use: 'population and GDP (PPP) for every country — the denominators of the fair-share rules',
+        use: 'population and GDP (PPP) for every country, the denominators of the fair-share rules',
       },
       {
         links: [{ label: 'Bjørn & Hauschild (2015)', url: 'https://doi.org/10.1007/s11367-015-0899-2' }],
-        use: 'the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr — the budget every fair-share rule divides',
+        use: 'the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr, the budget every fair-share rule divides',
       },
     ],
   },
@@ -126,12 +126,12 @@ const BUILT_WITH = [
   {
     name: 'React 19',
     url: 'https://react.dev/',
-    use: 'all rendering — every chart is JSX',
+    use: 'all rendering; every chart is JSX',
   },
   {
     name: 'D3 7',
     url: 'https://d3js.org/',
-    use: 'maths only — scales, shapes, projections, interpolation; it never touches the DOM',
+    use: 'maths only: scales, shapes, projections, interpolation; it never touches the DOM',
   },
   {
     name: 'Motion',
@@ -151,7 +151,7 @@ const BUILT_WITH = [
   {
     name: 'Python + Jupyter',
     url: 'https://jupyter.org/',
-    use: 'the data pipeline — pandas, sdmx1 for the Pacific Data Hub, and pyaesa for the allocation maths',
+    use: 'the data pipeline: pandas, sdmx1 for the Pacific Data Hub, and pyaesa for the allocation maths',
   },
 ]
 
@@ -213,6 +213,21 @@ export function ColophonScene() {
             </dd>
           </div>
           <div>
+            <dt>Built with</dt>
+            <dd>
+              <ul className="colophon__sources">
+                {BUILT_WITH.map((t) => (
+                  <li key={t.name}>
+                    <a href={t.url} target="_blank" rel="noopener noreferrer">
+                      {t.name}
+                    </a>{': '}
+                    {t.use}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+          <div>
             <dt>Data</dt>
             <dd>
               {DATA_GROUPS.map((group) => (
@@ -233,28 +248,13 @@ export function ColophonScene() {
                               {link.label}
                             </a>
                           </span>
-                        ))}{' '}
-                        — {item.use}
+                        ))}{': '}
+                        {item.use}
                       </li>
                     ))}
                   </ul>
                 </div>
               ))}
-            </dd>
-          </div>
-          <div>
-            <dt>Built with</dt>
-            <dd>
-              <ul className="colophon__sources">
-                {BUILT_WITH.map((t) => (
-                  <li key={t.name}>
-                    <a href={t.url} target="_blank" rel="noopener noreferrer">
-                      {t.name}
-                    </a>{' '}
-                    — {t.use}
-                  </li>
-                ))}
-              </ul>
             </dd>
           </div>
         </dl>

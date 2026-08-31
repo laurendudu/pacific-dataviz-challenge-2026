@@ -34,8 +34,8 @@ const CAPTIONS = [
 
 /**
  * Act 3 ranking. The same 198 countries under three ways of dividing one
- * budget, in the order the argument runs: grandfathering first — where every
- * country ties and the board looks level — then egalitarian and prioritarian,
+ * budget, in the order the argument runs: grandfathering first (where every
+ * country ties and the board looks level), then egalitarian and prioritarian,
  * which pull it apart.
  */
 export function RankingScene() {
@@ -73,7 +73,7 @@ export function RankingScene() {
 
     const labelled = [
       ...PACIFIC_TERRITORIES.map((t) => items.find((row) => row.iso === t.iso)),
-      /* Pacific names first — every territory — then the large emitters. */
+      /* Pacific names first (every territory), then the large emitters. */
       ...EMITTER_LIST.map((iso) => items.find((row) => row.iso === iso)),
     ].filter(Boolean)
 
@@ -360,8 +360,8 @@ function RankingView({
             </span>
             {model.columns.slice(0, liveCount).map((col, i) => {
               const value = hovered.values[i]
-              const rankText = formatRank(hovered.ranks[i]) ?? '—'
-              const asrText = value == null ? '—' : formatAsr(value)
+              const rankText = formatRank(hovered.ranks[i]) ?? '–'
+              const asrText = value == null ? '–' : formatAsr(value)
               const tied = tiePhrase(hovered, i, model.rows.items)
               return (
                 <span key={col.id}>
