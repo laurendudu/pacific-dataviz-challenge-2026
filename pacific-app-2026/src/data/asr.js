@@ -106,26 +106,6 @@ export function findCountryFeature(query) {
   return byName.get(lower) ?? byName.get(NAME_ALIAS[lower] ?? '') ?? null
 }
 
-/**
- * First-scene set: a Pacific island well below 1, one just under, one over,
- * and a large emitter far above. Values are 2023 equal-per-capita min_cc
- * from asr.json — used as fallback if the fetch has not landed yet.
- */
-export const EXAMPLES = [
-  { iso: 'MHL', name: 'Marshall Islands', asr: 0.1181 },
-  { iso: 'KIR', name: 'Kiribati', asr: 0.9446 },
-  { iso: 'FJI', name: 'Fiji', asr: 3.4241 },
-  { iso: 'CHN', name: 'China', asr: 11.5174 },
-]
-
-export function asrInYear(table, iso, year = YEAR) {
-  if (!table || !iso) return null
-  const rec = table[iso]
-  if (!rec) return null
-  const value = rec[String(year)] ?? rec[year]
-  return value == null ? null : Number(value)
-}
-
 /** Loads one ASR JSON table and indexes one year as iso3 → number. */
 export function useAsr(year = YEAR, url = ASR_URL) {
   const { data, error, loading } = useData(url)

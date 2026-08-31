@@ -70,17 +70,14 @@ Eight scrolling scenes, in `pacific-app-2026/src/scenes/`.
 symlink to `data_viz/`, and those six must stay un-ignored in `.gitignore` or
 the Pages build fails its own bundle check.
 
-`data_viz/tourism.json` and `data_viz/energy.json` are computed by notebooks 05
-and 06 but **are not read by the app** — they were built for a scene that did
-not make the final cut. The Pacific tourism figure that *is* in the piece
-(Palau's 5.3 visitors per resident) comes from `palau_context.json`.
-
 ---
 
 ## The pipeline
 
 Install the Python dependencies, then run the notebooks in order from the repo
-root. Each writes what the next reads.
+root. Each writes what the next reads. (The numbering skips 05 and 06 — those
+were exploratory tourism and energy notebooks for a scene that did not make the
+final cut, since removed; they live in the git history.)
 
 ```bash
 pip install pyaesa pandas numpy requests sdmx1 pycountry jupyter
@@ -92,14 +89,12 @@ pip install pyaesa pandas numpy requests sdmx1 pycountry jupyter
 | `02_emissions.ipynb` | Fetches and merges national GHG emissions (SPC + OWID) | `asr/A_lca/…`, `data_viz/emissions.csv`, `countries.csv` | feeds 03 |
 | `03_asr.ipynb` | Computes the ASR under all three allocation rules | `asr.json`, `asr_gdp.json`, `asr_gf.json`, `asr.csv`, `variables.csv` | ✅ |
 | `04_contributions.ipynb` | Each country's share of 2023 world emissions, and the Pacific bloc's | `contributions.json`, `contributions.csv` | ✅ |
-| `05_tourism.ipynb` | Tourist arrivals per resident for every Pacific island, and the 2019 world ranking | `tourism.csv`, `tourism.json` | ❌ not read |
-| `06_energy.ipynb` | Oil-fired share of electricity and electricity per resident, Pacific against the world | `energy.csv`, `energy.json` | ❌ not read |
 | `07_exposure.ipynb` | Joins six candidate x axes onto the ASR panel | `scatter.json` | ✅ |
 | `08_palau_context.ipynb` | Which indicators make Palau an outlier among Pacific islands, scored by robust z | `palau_context.json` | ✅ |
 
 Timing: notebook 01 downloads ~210 MB and is slow; 03 runs the full allocation
 chain and takes ~20 minutes; 07 takes about a minute; the rest run in seconds.
-All eight are safe to re-run.
+All six are safe to re-run.
 
 Shared settings — paths, the year window (2000–2023), the Pacific country list,
 and the reasoning behind every methodological choice — live in `config.py`.
@@ -168,14 +163,11 @@ machine-readable definition at
 | ✅ | [`DF_CLIMATE_CHANGE`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_CLIMATE_CHANGE) | `GHG_EMI_CAPITA` | GHG emissions per capita for the PICTs — the Pacific end of the ASR numerator | 02, 08 |
 | ✅ | [`DF_SDG_11`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_SDG_11) | `VC_DSR_LSGP` | Disaster loss as a share of GDP (SDG 11.5.2) for 12 PICTs, cross-checked row by row against the UN copy | 07 |
 | ✅ | [`DF_ENERGY`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_ENERGY) | `ENERGY_IND_006/007/011/015` | Installed capacity, electricity generated, fuel imports, primary energy — Palau's outlier family | 08 |
-| ✅ | [`DF_TOURISM_ARRIVALS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_ARRIVALS) | `TOUR` | Tourist arrivals — Palau's 5.3 visitors per resident, the ruled-out hypothesis | 05, 08 |
-| ✅ | [`DF_POP_PROJ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_PROJ) | `MIDYEARPOPEST` | Mid-year population estimates, the denominator of every per-resident figure | 05, 06, 08 |
+| ✅ | [`DF_TOURISM_ARRIVALS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_ARRIVALS) | `TOUR` | Tourist arrivals — Palau's 5.3 visitors per resident, the ruled-out hypothesis | 08 |
+| ✅ | [`DF_POP_PROJ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_PROJ) | `MIDYEARPOPEST` | Mid-year population estimates, the denominator of every per-resident figure | 08 |
 | ✅ | [`DF_WASTE`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_WASTE) | `SOLIDWASTEPC` | Municipal solid waste per person per day | 08 |
 | ✅ | [`DF_NMDI_FIS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_NMDI_FIS) | `ER_MRN_MARIN` | Marine area protected, % of territorial waters — Palau's counterpoint | 08 |
 | ✅ | [`DF_WBWDI`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_WBWDI) | `EG_EGY_PRIM_PP_KD`, `AG_LND_FRST_ZS` | Energy intensity and forest cover. **World Bank WDI republished by SPC**, not an SPC measurement — used because it covers the Pacific consistently | 08 |
-| ⬚ | [`DF_POWER_GEN`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POWER_GEN) | generation by source | Oil-fired share of electricity for the Pacific | 06 |
-| ⬚ | [`DF_SDG`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_SDG) | `EG_FEC_RNEW` | Renewable share of final energy consumption | 06 |
-| ⬚ | [`DF_OVERSEAS_VISITORS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_OVERSEAS_VISITORS) | `TOU`, `_T` (`NOSVA`) | Visitor arrivals by purpose, air and sea — adds cruise excursionists | 05 |
 | ⬚ | [`DF_TOURISM_EARNINGS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_EARNINGS) | — | Scanned for the Palau search; **no Palau rows exist at all**, so it is a documented gap rather than a source | 08 |
 
 Considered and not used: [`DF_POP_LECZ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_LECZ)
@@ -190,10 +182,6 @@ to a climate-exposure index, but Pacific-only, so it cannot carry a world x axis
 | ✅ | [ND-GAIN Country Index 2026](https://gain.nd.edu/our-work/country-index/download-data/) (University of Notre Dame, CC-licensed) | Climate **exposure**, 192 countries — the scatter's headline x axis. The **vulnerability** composite ships too, as the counter-example the scene argues against | 07 |
 | ✅ | [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal) ([API](https://unstats.un.org/sdgapi/swagger/)), indicator 11.5.2, series `VC_DSR_LSGP` | Direct economic loss from disasters as % of GDP, Sendai Framework, 149 countries | 07 |
 | ✅ | World Bank [`NY.GDP.PETR.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS), [`NY.GDP.COAL.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS), [`NY.GDP.NGAS.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS) | Oil, coal and gas rents as % of GDP, summed, mean 2015–2021 — who was *paid* for the overshoot | 07 |
-| ⬚ | [Our World in Data — Energy](https://github.com/owid/energy-data) | Electricity mix for the rest of the world | 06 |
-| ⬚ | [World Bank `ST.INT.ARVL`](https://data.worldbank.org/indicator/ST.INT.ARVL) | International tourist arrivals, for the 2019 world ranking | 05 |
-| ⬚ | [World Bank `EG.ELC.FOSL.ZS`](https://data.worldbank.org/indicator/EG.ELC.FOSL.ZS) | Fossil share of electricity — agrees with SPC generation data to 0.03 points at the median across 330 island-years | 06 |
-| ⬚ | [World Bank `EG.FEC.RNEW.ZS`](https://data.worldbank.org/indicator/EG.FEC.RNEW.ZS) | Renewable share of final energy, rest of world | 06 |
 
 All World Bank indicators are pulled from the public
 [Indicators API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)
@@ -236,7 +224,7 @@ territorial (production-based, `fu_code="L1.b"`). Full citation list:
 | [sdmx1](https://pypi.org/project/sdmx1/) | SDMX client for the Pacific Data Hub |
 | [requests](https://requests.readthedocs.io/) | World Bank, UN SDG and ND-GAIN downloads |
 | [pycountry](https://pypi.org/project/pycountry/) | ISO 3166 code and name resolution |
-| [Jupyter](https://jupyter.org/) | The eight numbered notebooks |
+| [Jupyter](https://jupyter.org/) | The six numbered notebooks |
 
 **App — `pacific-app-2026/`**
 

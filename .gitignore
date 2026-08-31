@@ -1,6 +1,7 @@
 .claude
 __pycache__
 memory
+.DS_Store
 PLAN.md
 # Notebook outputs. The tables the app fetches at runtime are tracked:
 # pacific-app-2026/public/data symlinks here, so they must be in the repo for
@@ -12,8 +13,6 @@ data_viz/*
 !data_viz/contributions.json
 !data_viz/scatter.json
 !data_viz/palau_context.json
-!data_viz/tourism.json
-!data_viz/energy.json
 
 # pyaesa workspace — downloaded and computed, rebuilt by the notebooks
 data_raw/
