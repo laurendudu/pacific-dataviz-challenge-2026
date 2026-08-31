@@ -96,6 +96,13 @@ export function useScrollProgress({ smooth = 0.09 } = {}) {
 
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 
+/** Discrete beat 0 … beats-1 from a pinned scene's progress 0 → 1. */
+export function beatIndex(progress, beats) {
+  const n = Math.max(1, beats)
+  if (n <= 1) return 0
+  return Math.min(n - 1, Math.max(0, Math.round(progress * (n - 1))))
+}
+
 /** Remap a slice of progress onto 0→1. slice(p, 0.2, 0.5) → 0 below 20%, 1 at 50%. */
 export const slice = (p, start, end) => clamp((p - start) / (end - start), 0, 1)
 
