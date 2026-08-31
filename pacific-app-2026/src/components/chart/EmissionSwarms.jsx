@@ -10,18 +10,6 @@ import {
   OVERSHOOT,
 } from '../../data/ghgBudget2023'
 import { PACIFIC_BUDGET_ASK } from '../../data/allocation'
-import {
-  AsrCountry,
-  ASR_FILL_OVER,
-  ASR_FILL_UNDER,
-  asrRadii,
-} from './AsrCountry'
-
-const WORLD_WELL = 78
-/** World glyph only — other AsrCountry instances keep the default 2px unit. */
-const WORLD_RING_GAP = 5
-/** Same one-decimal overshoot the fraction prints as 6.4. */
-const WORLD_ASR = Math.round(OVERSHOOT * 10) / 10
 
 const STACKED_AT = 640
 /** Prefer translation-only when RMS scale is this close to 1. */
@@ -50,7 +38,7 @@ export function EmissionSwarms({
   eqOpacity = 0,
   resultOpacity = 0,
   noteOpacity = 0,
-  worldOpacity = 0,
+  shift = 0,
   qNumOpacity = 0,
   qDenOpacity = 0,
   pacificPct = 0.053,
@@ -95,11 +83,24 @@ export function EmissionSwarms({
     }
   }, [])
 
-  const geom = useMemo(() => layoutEquation(frame), [frame])
+  const geom = useMemo(
+    () => layoutEquation(frame),
+    [frame],
+  )
   const stacked = (frame?.width ?? 0) < STACKED_AT
+  const dx = stacked ? 0 : (geom?.shiftDx ?? 0) * shift
   const ratio = formatRatio(OVERSHOOT)
   const termOpacity = eqOpacity * (1 - Math.max(qNumOpacity, qDenOpacity))
   const pacificShare = formatSharePct(pacificPct)
+  const asks = geom
+    ? placeAsks({
+        num: offsetCloud(geom.num, dx),
+        den: offsetCloud(geom.den, dx),
+        width: frame.width,
+        height: frame.height,
+        stacked,
+      })
+    : null
 
   return (
     <div ref={stageRef} className="swarms-stage">
@@ -127,7 +128,7 @@ export function EmissionSwarms({
           }
         >
           {geom.nodes.map((n) => {
-            const p = morphNode(n, morph, geom.spentRigid)
+            const p = morphNode(n, morph, geom.spentRigid, dx)
             return (
               <circle
                 key={n.id}
@@ -143,16 +144,16 @@ export function EmissionSwarms({
 
           <line
             className="swarm-eq__bar"
-            x1={geom.bar.x1}
+            x1={geom.bar.x1 + dx}
             y1={geom.bar.y}
-            x2={geom.bar.x2}
+            x2={geom.bar.x2 + dx}
             y2={geom.bar.y}
             opacity={eqOpacity}
           />
 
           <text
             className="swarm-eq__term"
-            x={geom.numLabel.x}
+            x={geom.numLabel.x + dx}
             y={geom.numLabel.y}
             textAnchor={geom.numLabel.anchor}
             dominantBaseline={geom.numLabel.baseline}
@@ -162,7 +163,7 @@ export function EmissionSwarms({
           </text>
           <text
             className="swarm-eq__term"
-            x={geom.denLabel.x}
+            x={geom.denLabel.x + dx}
             y={geom.denLabel.y}
             textAnchor={geom.denLabel.anchor}
             dominantBaseline={geom.denLabel.baseline}
@@ -171,12 +172,12 @@ export function EmissionSwarms({
             budget
           </text>
 
-          <AskLeader ask={geom.asks.num} opacity={qNumOpacity} />
-          <AskLeader ask={geom.asks.den} opacity={qDenOpacity} />
+          <AskLeader ask={asks.num} opacity={qNumOpacity} />
+          <AskLeader ask={asks.den} opacity={qDenOpacity} />
 
           <text
             className="swarm-eq__equals"
-            x={geom.equals.x}
+            x={geom.equals.x + dx}
             y={geom.equals.y}
             fontSize={geom.equals.size}
             dominantBaseline="middle"
@@ -186,7 +187,7 @@ export function EmissionSwarms({
           </text>
           <text
             className="swarm-eq__result"
-            x={geom.result.x}
+            x={geom.result.x + dx}
             y={geom.result.y}
             fontSize={geom.result.size}
             dominantBaseline="middle"
@@ -202,86 +203,34 @@ export function EmissionSwarms({
           className={`swarm-eq__note${stacked ? ' swarm-eq__note--stacked' : ''}`}
           style={{
             opacity: noteOpacity,
-            left: stacked ? undefined : geom.note.x,
+            left: stacked ? undefined : geom.note.x + dx,
             top: stacked ? undefined : geom.note.y,
           }}
           aria-hidden={noteOpacity < 0.5}
         >
-          This is called an ASR, or Absolute Sustainability Ratio
+          This is called an <strong>ASR</strong>, or Absolute Sustainability Ratio
         </p>
       ) : null}
 
-      {geom ? (
-        <aside
-          className={`swarm-world${stacked ? ' swarm-world--stacked' : ''}`}
-          style={{
-            opacity: worldOpacity,
-            left: geom.world.x,
-            top: geom.world.y,
-            width: geom.world.w,
-          }}
-          aria-hidden={worldOpacity < 0.5}
-        >
-          <AsrCountry
-            name="World"
-            asr={WORLD_ASR}
-            size={WORLD_WELL}
-            land="world"
-            ringGap={WORLD_RING_GAP}
-          />
-          <div className="swarm-world__legend">
-            <ul className="swarm-world__legend-keys">
-              <li>
-                <svg
-                  className="swarm-world__ring"
-                  width="16"
-                  height="8"
-                  aria-hidden="true"
-                >
-                  <line x1="0" y1="4" x2="16" y2="4" />
-                </svg>
-                ASR = 1
-              </li>
-              <li>
-                <span
-                  className="swarm-world__swatch"
-                  style={{ background: ASR_FILL_UNDER }}
-                  aria-hidden="true"
-                />
-                Sage: inside the allocation
-              </li>
-              <li>
-                <span
-                  className="swarm-world__swatch"
-                  style={{ background: ASR_FILL_OVER }}
-                  aria-hidden="true"
-                />
-                Gold: past the allocation
-              </li>
-            </ul>
-          </div>
-        </aside>
-      ) : null}
-
-      {geom ? (
-        <AskBox box={geom.asks.num.box} opacity={qNumOpacity}>
+      {asks ? (
+        <AskNote box={asks.num.box} opacity={qNumOpacity}>
           The Pacific emits {pacificShare}% of 2023 GHG emissions
-        </AskBox>
+        </AskNote>
       ) : null}
-      {geom ? (
-        <AskBox
-          box={geom.asks.den.box}
+      {asks ? (
+        <AskNote
+          box={asks.den.box}
           opacity={qDenOpacity}
           variant="den"
         >
           {PACIFIC_BUDGET_ASK}
-        </AskBox>
+        </AskNote>
       ) : null}
     </div>
   )
 }
 
-function AskBox({ box, opacity, children, variant }) {
+function AskNote({ box, opacity, children, variant }) {
   if (opacity <= 0.001) return null
   return (
     <p
@@ -302,20 +251,19 @@ function AskBox({ box, opacity, children, variant }) {
 function AskLeader({ ask, opacity }) {
   if (opacity <= 0.001) return null
   const { line } = ask
+  const dy = Math.abs(line.y2 - line.y1)
+  const bow = dy < 24 ? 0 : (line.y2 >= line.y1 ? 16 : -16)
+  const mx = (line.x1 + line.x2) / 2 + bow
+  const my = (line.y1 + line.y2) / 2
+  const d = `M${line.x1},${line.y1} Q${mx},${my} ${line.x2},${line.y2}`
   return (
     <g className="swarm-eq__ask-g" opacity={opacity}>
-      <line
-        className="swarm-eq__ask-line"
-        x1={line.x1}
-        y1={line.y1}
-        x2={line.x2}
-        y2={line.y2}
-      />
+      <path className="swarm-eq__ask-line" d={d} />
       <circle
         className="swarm-eq__ask-dot"
         cx={line.x2}
         cy={line.y2}
-        r="2.4"
+        r="2"
       />
     </g>
   )
@@ -421,68 +369,88 @@ function layoutEquation(frame) {
     x2: num.maxX + 8,
     y: barY,
   }
-  const eqGap = stacked ? 10 : 14
+  const eqGap = stacked ? 10 : 16
   const equalsSize = stacked ? Math.min(40, height * 0.11) : Math.min(64, height * 0.12)
-  const resultSize = stacked ? Math.min(50, height * 0.14) : Math.min(88, height * 0.18)
+  const resultSize = stacked ? Math.min(56, height * 0.16) : Math.min(96, height * 0.2)
   const equalsX = bar.x2 + eqGap
   const resultX = equalsX + equalsSize * 0.78
-  /* Gloss sits under the result so the world glyph can take the right. */
-  const noteX = stacked ? width / 2 : equalsX
-  const noteY = stacked ? height - 4 : barY + resultSize * 0.46
+  const resultW = resultSize * 1.72
+  /* Gloss sits to the right of the result, vertically centred on the bar. */
+  const noteX = stacked ? width / 2 : resultX + resultW + 14
+  const noteY = stacked ? height - 4 : barY
 
   return {
     radius,
     nodes,
     spentRigid,
+    shiftDx: slots.shiftDx,
     bar,
     equals: { x: equalsX, y: barY, size: equalsSize },
     result: { x: resultX, y: barY, size: resultSize },
     note: { x: noteX, y: noteY },
-    numLabel: stacked
-      ? { x: (num.minX + num.maxX) / 2, y: num.minY - 10, anchor: 'middle', baseline: 'auto' }
-      : { x: Math.max(8, num.minX - 14), y: num.cy, anchor: 'end', baseline: 'middle' },
-    denLabel: stacked
-      ? { x: (den.minX + den.maxX) / 2, y: den.minY - 10, anchor: 'middle', baseline: 'auto' }
-      : { x: Math.max(8, den.minX - 14), y: den.cy, anchor: 'end', baseline: 'middle' },
-    world: placeWorldColumn({ slots, barY, stacked }),
-    asks: placeAsks({ num, den, width, height, stacked }),
-  }
-}
-
-function placeWorldColumn({ slots, barY, stacked }) {
-  const { rAsr, rOne } = asrRadii(WORLD_WELL, WORLD_ASR, WORLD_RING_GAP)
-  const glyphR = Math.max(rAsr, rOne)
-  return {
-    x: slots.world.x,
-    y: stacked ? slots.world.y : barY - glyphR,
-    w: slots.world.w,
+    num,
+    den,
+    numLabel: {
+      x: (num.minX + num.maxX) / 2,
+      y: num.minY - 10,
+      anchor: 'middle',
+      baseline: 'auto',
+    },
+    denLabel: {
+      x: (den.minX + den.maxX) / 2,
+      y: den.maxY + 16,
+      anchor: 'middle',
+      baseline: 'hanging',
+    },
   }
 }
 
 function fractionSlots(width, height, stacked) {
-  const worldW = stacked
-    ? Math.min(width - 16, 280)
-    : Math.min(260, Math.max(200, width * 0.24))
-  const left = stacked ? 8 : 72
-  const top = stacked ? 16 : 8
-  const right = stacked ? 8 : worldW + 8
-  const bottom = stacked ? Math.min(176, height * 0.28) : 10
-  const fracW = Math.max(48, width - right - left)
-  const barY = stacked ? height * 0.42 : height * 0.54
-  const gap = stacked ? 16 : 14
+  if (stacked) {
+    const left = 8
+    const top = 16
+    const right = 8
+    const bottom = 72
+    const fracW = Math.max(48, width - right - left)
+    const barY = height * 0.42
+    const gap = 16
+    return {
+      num: { x: left, y: top, w: fracW, h: Math.max(48, barY - gap - top) },
+      den: {
+        x: left,
+        y: barY + gap,
+        w: fracW,
+        h: Math.max(40, height - (barY + gap) - bottom),
+      },
+      shiftDx: 0,
+    }
+  }
+
+  /* Vertical room above/below the blobs for the word labels, then the asks. */
+  const top = 52
+  const bottom = 68
+  const barY = height * 0.52
+  const gap = 14
+  const numH = Math.max(48, barY - gap - top)
+  const denH = Math.max(40, height - (barY + gap) - bottom)
+  const resultRoom = 16 + 64 * 0.78 + 96 * 1.72
+  const noteRoom = 220
+  const packW = Math.min(
+    460,
+    width * 0.36,
+    Math.max(200, Math.min(numH, denH) * 1.35),
+  )
+
+  const eqW = packW + resultRoom + noteRoom
+  const centeredX = Math.max(24, (width - eqW) / 2)
+
+  const leftX = Math.max(48, width * 0.055)
+
+  /* Slot size is the centred pack — shift only translates, never re-packs. */
   return {
-    num: { x: left, y: top, w: fracW, h: Math.max(48, barY - gap - top) },
-    den: {
-      x: left,
-      y: barY + gap,
-      w: fracW,
-      h: Math.max(40, height - (barY + gap) - bottom),
-    },
-    world: {
-      x: stacked ? Math.max(8, (width - worldW) / 2) : width - worldW - 2,
-      y: stacked ? height - bottom + 4 : 0,
-      w: worldW,
-    },
+    num: { x: centeredX, y: top, w: packW, h: numH },
+    den: { x: centeredX, y: barY + gap, w: packW, h: denH },
+    shiftDx: leftX - centeredX,
   }
 }
 
@@ -508,12 +476,13 @@ function cloudBounds(nodes, ox, oy, radius) {
   return { minX, maxX, minY, maxY, cy: (minY + maxY) / 2, cx: (minX + maxX) / 2 }
 }
 
-/** Per-dot lerp for budget; rigid translate (+ optional uniform scale) for spent. */
-function morphNode(n, t, spentRigid) {
+/** Per-dot lerp for budget; rigid translate (+ optional uniform scale) for spent.
+ *  `dx` slides the already-morphed fraction without re-packing. */
+function morphNode(n, t, spentRigid, dx = 0) {
   if (n.kind === 'spent' && spentRigid) {
     const { c0x, c0y, c1x, c1y, scale } = spentRigid
     const s = 1 + t * (scale - 1)
-    const cx = c0x + t * (c1x - c0x)
+    const cx = c0x + t * (c1x + dx - c0x)
     const cy = c0y + t * (c1y - c0y)
     return {
       cx: cx + (n.x0 - c0x) * s,
@@ -521,7 +490,7 @@ function morphNode(n, t, spentRigid) {
     }
   }
   return {
-    cx: n.x0 + t * (n.x1 - n.x0),
+    cx: n.x0 + t * (n.x1 + dx - n.x0),
     cy: n.y0 + t * (n.y1 - n.y0),
   }
 }
@@ -594,26 +563,35 @@ function rigidCloudBounds(fromPts, rigid, radius) {
   return { minX, maxX, minY, maxY, cy: (minY + maxY) / 2, cx: (minX + maxX) / 2 }
 }
 
+function offsetCloud(b, dx) {
+  return {
+    ...b,
+    minX: b.minX + dx,
+    maxX: b.maxX + dx,
+    cx: b.cx + dx,
+  }
+}
+
 function placeAsks({ num, den, width, height, stacked }) {
   if (stacked) {
-    const w = Math.min(240, Math.max(168, width * 0.44))
-    const numBox = { x: Math.max(8, width - w - 8), y: 6, w, h: 72 }
-    const denBox = { x: 8, y: Math.max(8, height - 96), w, h: 88 }
+    const w = Math.min(260, Math.max(168, width * 0.55))
+    const numBox = { x: Math.max(8, (width - w) / 2), y: 4, w, h: 52 }
+    const denBox = { x: Math.max(8, (width - w) / 2), y: Math.max(8, height - 60), w, h: 56 }
     return {
       num: {
         box: numBox,
         line: {
-          x1: numBox.x + 16,
-          y1: numBox.y + numBox.h,
+          x1: num.cx,
+          y1: numBox.y + 44,
           x2: num.cx,
-          y2: num.minY + 6,
+          y2: num.minY + 4,
         },
       },
       den: {
         box: denBox,
         line: {
-          x1: denBox.x + denBox.w * 0.7,
-          y1: denBox.y,
+          x1: den.cx,
+          y1: denBox.y + 4,
           x2: den.cx,
           y2: den.maxY - 4,
         },
@@ -621,41 +599,37 @@ function placeAsks({ num, den, width, height, stacked }) {
     }
   }
 
-  const leftEdge = Math.min(num.minX, den.minX)
-  const w = Math.max(168, Math.min(260, leftEdge - 42))
+  const w = Math.min(280, Math.max(200, num.maxX - num.minX + 24))
   const numBox = {
-    x: 10,
-    y: Math.max(4, num.minY - 4),
+    x: Math.max(8, num.cx - w / 2),
+    y: Math.max(2, num.minY - 50),
     w,
-    h: 76,
+    h: 48,
   }
-  let denBox = {
-    x: 10,
-    y: Math.min(height - 96, den.maxY - 44),
+  const denBox = {
+    x: Math.max(8, den.cx - w / 2),
+    y: Math.min(height - 52, den.maxY + 8),
     w,
-    h: 88,
-  }
-  if (numBox.y + numBox.h + 14 > denBox.y) {
-    denBox = { ...denBox, y: numBox.y + numBox.h + 16 }
+    h: 52,
   }
 
   return {
     num: {
       box: numBox,
       line: {
-        x1: numBox.x + numBox.w,
-        y1: numBox.y + numBox.h * 0.78,
-        x2: num.minX + (num.maxX - num.minX) * 0.14,
-        y2: num.cy,
+        x1: num.cx,
+        y1: numBox.y + numBox.h - 2,
+        x2: num.cx,
+        y2: num.minY + 2,
       },
     },
     den: {
       box: denBox,
       line: {
-        x1: denBox.x + denBox.w,
-        y1: denBox.y + denBox.h * 0.22,
-        x2: den.minX + (den.maxX - den.minX) * 0.14,
-        y2: den.cy,
+        x1: den.cx,
+        y1: denBox.y + 4,
+        x2: den.cx,
+        y2: den.maxY - 2,
       },
     },
   }
