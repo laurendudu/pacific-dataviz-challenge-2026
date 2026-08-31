@@ -1,191 +1,149 @@
+import { useState } from 'react'
+import { HypothesisRow } from '../components/chart/HypothesisRow'
 import { Scene } from '../components/scroll/Scene'
-import { DotDistribution } from '../components/chart/DotDistribution'
-import { IndexedLines } from '../components/chart/IndexedLines'
-import { usePalauCase, TEST_YEARS } from '../data/palau'
+import { usePalauContext } from '../data/palau'
 
 /**
- * The case of Palau — three hypotheses for the highest ASR in the project,
- * each with the evidence that tests it. Two survive as description, one is
- * ruled out as a cause; the piece says so rather than picking the tidy story.
+ * The case of Palau, as a line-up of suspects.
  *
- * Cards appear in turn with scroll progress and stay, so the reader ends up
- * looking at the whole case file at once.
+ * One question per row, one repeated chart form, all six sharing the same
+ * population of islands. The reader learns the row once and then reads the
+ * pattern: Palau against the right edge on every energy measure, mid-pack on
+ * the one everybody assumes is the answer.
+ *
+ * Rows arrive with scroll and stay, so the case is whole by the end.
  */
-
-const STEPS = [0.04, 0.3, 0.56, 0.82]
-
 export function PalauScene() {
   return (
-    <Scene id="palau" pages={4}>
-      {(progress) => <PalauCase progress={progress} />}
+    <Scene id="palau" pages={5} smooth={1}>
+      {(progress) => <Lineup progress={progress} />}
     </Scene>
   )
 }
 
-function PalauCase({ progress }) {
-  const { headline, visitors, power, test, loading, error } = usePalauCase()
-  const shown = STEPS.map((t) => progress >= t)
+function Lineup({ progress }) {
+  const { headline, rows, loading, error } = usePalauContext()
+  const [hover, setHover] = useState(null)
+
+  /* Rows reveal across the first three-quarters of the scene; the closing
+     paragraph waits until the last one has landed. */
+  const shownCount = rows.length
+    ? Math.round(clamp((progress - 0.05) / 0.62, 0, 1) * rows.length)
+    : 0
 
   return (
     <div className="palau">
       <header className="palau__head">
-        <p className="palau__eyebrow">The case of Palau</p>
         <h2 className="palau__title">
-          {headline ? formatCount(headline.population) : '—'} people.{' '}
-          <em>{headline ? `${Math.round(headline.asr)}×` : '—'}</em> a fair share
-          of the carbon budget.
+          {headline ? (
+            <>
+              The case of Palau, the biggest overshooter in the Pacific
+            </>
+          ) : (
+            'Why?'
+          )}
         </h2>
         <p className="palau__lede">
-          The highest ratio in this story, by a distance — Fiji, the next
-          Pacific country, sits at 3.4. Three explanations suggest themselves.
-          Two of them hold.
+          Six hypotheses, each plotted on the same Pacific islands.
+        </p>
+        <p className="palau__legend">
+          <span className="palau__key palau__key--peer" aria-hidden="true" />
+          Pacific territories and countries
+          <span className="palau__key palau__key--subject" aria-hidden="true" />
+          Palau
         </p>
       </header>
 
-      {error ? (
-        <p className="palau__status">The Palau evidence files are unavailable.</p>
-      ) : null}
+      {error ? <p className="palau__status">Palau context unavailable.</p> : null}
       {loading ? <p className="palau__status">Loading the case…</p> : null}
 
-      {visitors && power && test ? (
-        <div className="palau__cards">
-          <Hypothesis
-            shown={shown[0]}
-            n="Hypothesis 1"
-            claim="It is the visitors"
-            body={`Palau hosts several times its own population every year. If arrivals
-                   carried the emissions, this is where they would come from.`}
-            verdict="consistent"
-            verdictLabel="Consistent — but see the test"
-            figure={
-              <DotDistribution
-                values={visitors.values}
-                subject={visitors.palau}
-                subjectLabel="Palau"
-                others={visitors.pacific}
-                median={visitors.median}
-                ticks={[0.01, 0.1, 1, 10, 100]}
-                tickFormat={formatRatio}
-                axisLabel="tourist arrivals per resident, 2019"
-                title="Tourist arrivals per resident, every country, 2019"
-                desc={`Palau at ${formatRatio(visitors.palau)} arrivals per resident, rank
-                       ${visitors.rank} of ${visitors.count}.`}
-              />
-            }
-            evidence={
-              <>
-                <strong>{formatRatio(visitors.palau)}</strong> arrivals per resident —{' '}
-                {ordinal(visitors.rank)} of {visitors.count} countries, and{' '}
-                {Math.round(visitors.palau / visitors.median)}× the world median.
-              </>
-            }
-          />
+      <ol className="palau__lineup">
+        {rows.map((row, i) => (
+          <li
+            key={row.id}
+            className={`hyp hyp--${row.verdict}${i < shownCount ? ' is-shown' : ''}`}
+          >
+            <div className="hyp__text">
+              <h3 className="hyp__claim">{row.claim}</h3>
+              <p className="hyp__body">{row.measure}</p>
+            </div>
 
-          <Hypothesis
-            shown={shown[1]}
-            n="Hypothesis 2"
-            claim="It is the diesel"
-            body={`Two diesel power stations run an island whose grid, water and
-                   airport are sized for far more people than live on it.`}
-            verdict="supported"
-            verdictLabel="Supported"
-            figure={
-              <DotDistribution
-                values={power.values}
-                subject={power.palau}
-                subjectLabel="Palau"
-                others={power.pacific}
-                median={power.median}
-                ticks={[10, 100, 1000, 10000]}
-                tickFormat={formatKwh}
-                axisLabel="kWh generated per resident, 2023"
-                title="Electricity generated per resident, every country, 2023"
-                desc={`Palau at ${formatKwh(power.palau)} kWh per resident against a world
-                       median of ${formatKwh(power.median)}.`}
-              />
-            }
-            evidence={
-              <>
-                <strong>{formatKwh(power.palau)} kWh</strong> per resident,{' '}
-                {(power.palau / power.median).toFixed(1)}× the world median — and{' '}
-                <strong>{Math.round(power.oilShare)}% oil-fired</strong> against a world
-                median of {Math.round(power.oilMedian)}%.
-              </>
-            }
-          />
+            <div className="hyp__strip">
+              {i < shownCount ? (
+                <HypothesisRow
+                  indicator={row.indicator}
+                  format={format}
+                  showEnds={i === 0}
+                  hovered={hover?.pict ?? null}
+                  onHover={setHover}
+                />
+              ) : null}
+              <p className="hyp__unit">
+                {row.indicator.unit}
+                <span className="hyp__year">{row.indicator.year}</span>
+              </p>
+            </div>
 
-          <Hypothesis
-            shown={shown[2]}
-            n="The test"
-            claim="Then the visitors stopped"
-            body={`COVID closed the borders. If tourism drove the emissions, a 96%
-                   collapse in arrivals had to pull them down with it.`}
-            verdict="refuted"
-            verdictLabel="Rules out visitors as the direct cause"
-            figure={
-              <IndexedLines
-                series={test.series}
-                years={TEST_YEARS}
-                baseYear={test.baseYear}
-                title="Arrivals, emissions and electricity, indexed to 2019 = 100"
-                desc={`Arrivals fall to ${Math.round(test.arrivalsLow)} while emissions
-                       reach ${Math.round(test.emissionsEnd.value)} and generation
-                       ${Math.round(test.generationEnd.value)}.`}
-              />
-            }
-            evidence={
-              <>
-                Arrivals fell to <strong>{Math.round(test.arrivalsLow)}</strong> on the
-                index. Emissions went <strong>up</strong>, to{' '}
-                {Math.round(test.emissionsEnd.value)} by {test.emissionsEnd.year};
-                generation barely moved. Over the whole window the two correlate at{' '}
-                <strong>+0.02</strong>.
-              </>
-            }
-          />
-        </div>
-      ) : null}
+            <div className="hyp__result">
+              <p className="hyp__rank">
+                <strong>{ordinal(row.indicator.rank)}</strong> of {row.indicator.n}
+              </p>
+              <p className="hyp__reading">{row.reading}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
 
-      <footer className={`palau__close${shown[3] ? ' is-shown' : ''}`}>
+      {hover ? <Tooltip hover={hover} /> : null}
+      <footer className="palau__close">
         <p>
-          So the honest reading is structural, not causal. Palau runs an
-          energy system sized for the people who visit, and the emissions are
-          divided by the people who stay. Tourism explains why the
-          infrastructure is that big — it is not what the meter is measuring.
-        </p>
-        <p className="palau__source">
-          Arrivals and generation: Pacific Data Hub .Stat (SPC), <code>DF_TOURISM_ARRIVALS</code>,{' '}
-          <code>DF_OVERSEAS_VISITORS</code>, <code>DF_POWER_GEN</code>. World distributions:
-          World Bank and Our World in Data. Emissions: SPC GHG per capita, the same series
-          behind every ASR here — EDGAR puts Palau in the same range, Our World in Data
-          roughly a fifth of it.
+          Sources: Pacific Data Hub .Stat — <code>DF_CLIMATE_CHANGE</code>,{' '}
+          <code>DF_ENERGY</code>, <code>DF_WASTE</code>,{' '}
+          <code>DF_TOURISM_ARRIVALS</code>, <code>DF_POP_PROJ</code>,{' '}
+          <code>DF_WBWDI</code>. Ranks are Pacific-only. Method and code:{' '}
+          <code>08_palau_context.ipynb</code>.
         </p>
       </footer>
     </div>
   )
 }
 
-function Hypothesis({ shown, n, claim, body, figure, evidence, verdict, verdictLabel }) {
+/**
+ * Hovering any dot names that island in every row at once — which is how a
+ * reader checks the claim instead of taking it: follow Fiji down the list and
+ * watch it stay in the middle.
+ */
+function Tooltip({ hover }) {
+  /* Positioned against the viewport, not the scene: the pointer coordinates
+     already are viewport coordinates, and measuring the container would mean
+     reading a ref while rendering. */
   return (
-    <article className={`palau-card${shown ? ' is-shown' : ''}`}>
-      <p className="palau-card__n">{n}</p>
-      <h3 className="palau-card__claim">{claim}</h3>
-      <p className="palau-card__body">{body}</p>
-      <div className="palau-card__figure">{shown ? figure : null}</div>
-      <p className="palau-card__evidence">{evidence}</p>
-      <p className={`palau-verdict palau-verdict--${verdict}`}>
-        <span className="palau-verdict__mark" aria-hidden="true">
-          {verdict === 'supported' ? '✓' : verdict === 'refuted' ? '✕' : '~'}
-        </span>
-        {verdictLabel}
-      </p>
-    </article>
+    <div
+      className="palau__tooltip"
+      role="status"
+      style={{ left: hover.x, top: hover.y }}
+    >
+      <strong>{hover.name}</strong>
+      <span>
+        {format(hover.value)} {hover.unit}
+      </span>
+      <span className="palau__tooltip-rank">
+        {ordinal(hover.rank)} of {hover.n} · {hover.label.toLowerCase()} ·{' '}
+        {hover.year}
+      </span>
+    </div>
   )
 }
 
-const formatCount = (v) => v.toLocaleString('en-GB')
-const formatRatio = (v) => (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2))
-const formatKwh = (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+
+/** One formatter for every row — the units differ, the reading habit shouldn't. */
+function format(v) {
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+  if (v >= 10) return v.toFixed(0)
+  if (v >= 1) return v.toFixed(1)
+  return v.toFixed(2)
+}
 
 function ordinal(n) {
   const rest = n % 100
