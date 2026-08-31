@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { PacificWorldScatter, scatterDomains } from '../components/chart/PacificWorldScatter'
+import { RankSearch } from '../components/chart/RankSearch'
 import { Scene } from '../components/scroll/Scene'
 import {
   SCATTER_PLOTS,
@@ -70,7 +71,9 @@ export function ScatterScene() {
 function ScatterView({ beat }) {
   const reduceMotion = useReducedMotion()
   const rootRef = useRef(null)
-  const [hovered, setHovered] = useState(null)
+  const [pointer, setPointer] = useState(null)
+  const [pinnedIso, setPinnedIso] = useState(null)
+  const [previewIso, setPreviewIso] = useState(null)
   const [picked, setPicked] = useState(null)
   const { countries, year, sources, loading, error } = useScatterCountries()
 
@@ -84,7 +87,7 @@ function ScatterView({ beat }) {
   const xVarId = allUnlocked && picked ? picked : scrolledId
 
   useEffect(() => {
-    setHovered(null)
+    setPointer(null)
   }, [xVarId])
 
   const domains = useMemo(
@@ -92,14 +95,20 @@ function ScatterView({ beat }) {
     [countries, xVarId],
   )
   const xVar = X_VAR_BY_ID[xVarId]
+  const searchItems = useMemo(
+    () => countries.map((c) => ({ iso: c.iso, name: c.name })),
+    [countries],
+  )
+  const activeIso = pointer?.iso ?? previewIso ?? pinnedIso
+  const hovered = pointer
 
   const onHover = (hit, event) => {
     if (!hit || !event) {
-      setHovered(null)
+      setPointer(null)
       return
     }
     const box = rootRef.current?.getBoundingClientRect()
-    setHovered({
+    setPointer({
       ...hit,
       px: box ? event.clientX - box.left : event.clientX,
       py: box ? event.clientY - box.top : event.clientY,
@@ -121,14 +130,20 @@ function ScatterView({ beat }) {
       <div className="scatter__captions">
         <p className="scatter__caption">Pacific vs the world</p>
         <p className="scatter__lede">
-          The same three rules, now for every country. Grandfathering hands
-          every one of them the identical ratio — 6.4 times a fair share, the
-          Marshall Islands and Saudi Arabia alike — so nobody is inside the
-          budget and nobody is told apart. Egalitarian spreads those same
-          countries across an 800-fold range, prioritarian wider still. That
-          spread is the point: a fairer budget is not one that holds every
-          country to a single line, it is one that can tell them apart.
+          By changing allocation principles, we can see that the allocated shares are attributed in a fairer manner, especially for countries
+          and terriories that are more vulnerable to climate change, emit less, and have less capacity to act. 
+          Through a egalitarian or prioritarian approaches, the responsability of reducing GHG emissions is more fairly distributed.
         </p>
+        <div className="scatter__tools">
+          <RankSearch
+            enabled={countries.length > 0}
+            items={searchItems}
+            pinnedIso={pinnedIso}
+            onPick={setPinnedIso}
+            onPreview={setPreviewIso}
+            reduceMotion={reduceMotion}
+          />
+        </div>
       </div>
 
       <div className="scatter__controls" role="group" aria-label="Horizontal axis">
@@ -148,7 +163,7 @@ function ScatterView({ beat }) {
                 onClick={() => {
                   if (allUnlocked) setPicked(v.id)
                   else if (i !== beat) scrollToXBeat(i)
-                  setHovered(null)
+                  setPointer(null)
                 }}
               >
                 {v.label}
@@ -173,7 +188,7 @@ function ScatterView({ beat }) {
                   xVarId={xVarId}
                   xDomain={domains.xDomain}
                   yDomain={domains.yDomain}
-                  hoveredIso={hovered?.iso ?? null}
+                  hoveredIso={activeIso}
                   onHover={onHover}
                 />
               ) : null}
@@ -214,7 +229,8 @@ function ScatterView({ beat }) {
           {error ? 'Country panel unavailable.' : null}
           {!loading && !error && year ? (
             <>
-              ASR {year}, on a log axis; the dashed line is a fair share of 1.{' '}
+              ASR {year}, on a log axis; dashed lines mark ASR = 1 and, where a
+              rule reaches it, ASR = 100.{' '}
               {xVar.note} {sources[xVarId] ? `${sources[xVarId]}.` : null}
             </>
           ) : null}
@@ -236,6 +252,7 @@ function ScatterView({ beat }) {
             <strong>{hovered.name}</strong>
             <span>
               {GROUP_LABEL[hovered.group] ?? 'World'}
+              {pinnedIso === hovered.iso ? ' · pinned' : ''}
               {' · '}
               {xVar.short}{' '}
               {xOf(hovered, xVarId) == null ? '—' : xVar.format(xOf(hovered, xVarId))}

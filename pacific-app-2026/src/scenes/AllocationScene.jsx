@@ -78,8 +78,8 @@ function AllocationView({ beat, tables, rows }) {
           {PACIFIC_BUDGET_ASK}
         </p>
         <p className="alloc__lede">
-          A world budget is one number. A country only gets an entitlement
-          once a rule decides how to split it — an allocation principle.
+          Allocation principles are the rules that decide how to split a shared budget.
+          How much should we allocate to the Pacific, and how does the Pacific actully respect its share? 
         </p>
       </div>
 
@@ -106,7 +106,7 @@ function AllocationView({ beat, tables, rows }) {
                   transition={BTN_FADE}
                   onClick={() => { if (allUnlocked) setPicked(p.id) }}
                 >
-                  {p.title}
+                  {p.label ?? p.title}
                 </motion.button>
               ))}
             </AnimatePresence>

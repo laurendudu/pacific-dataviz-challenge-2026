@@ -30,7 +30,7 @@ const FADE = {
 
 function allocationFigures(principle, result, worldMt) {
   return {
-    using: principle.title.toLowerCase(),
+    using: (principle.label ?? principle.title).toLowerCase(),
     mt: formatMt(result.mt),
     pct: formatBudgetPct(worldMt ? (result.mt / worldMt) * 100 : null),
   }
@@ -39,8 +39,9 @@ function allocationFigures(principle, result, worldMt) {
 /**
  * One allocation rule at a time: a headline and definition on the left,
  * every Pacific territory on the right — a Pacific map of ASR discs, or
- * AsrCountry glyphs if `visual="grid"`. D3 stays inside the child charts;
- * this file only composes.
+ * AsrCountry glyphs if `visual="grid"`. Wells are empty rings (`land={false}`),
+ * matching the first globe disc: ink stroke, no country silhouette. D3 stays
+ * inside the child charts; this file only composes.
  */
 export function AllocationPrinciples({
   methodId = null,
@@ -133,7 +134,7 @@ export function AllocationPrinciples({
           role="list"
           aria-label={
             principle
-              ? `${principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
+              ? `${principle.label ?? principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
               : `Pacific territories and the ASR = 1 ring, ${year}`
           }
         >
@@ -159,6 +160,7 @@ export function AllocationPrinciples({
                   size={SIZE}
                   frameRadius={FRAME}
                   fit="shared"
+                  land={false}
                   hideFill={hideFill}
                 />
               </div>

@@ -130,8 +130,8 @@ export const X_VARS = [
     axisLabel: 'GDP per capita (PPP, 2017 USD)',
     format: formatGdp,
     ends: ['poorer', 'richer'],
-    lede: 'Wealth rises to the right. The same cloud, sorted by the capacity to act rather than by the need to.',
-    note: 'The same GDP the prioritarian rule allocates on.',
+    lede: '',
+    note: '',
   },
 ]
 

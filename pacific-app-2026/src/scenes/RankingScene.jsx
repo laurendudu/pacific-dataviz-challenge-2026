@@ -29,7 +29,7 @@ const RANK_REVEAL = [
 const CAPTIONS = [
   'Grandfathering ties all 198 countries on one rank: everyone holds the world’s overshoot.',
   'If we split the budget equally per person, most of the Pacific rises to the top, except for Palau, which falls with the large emitters.',
-  '',
+  'Using a prioritarian approach, the Pacific rises even higher, with the Marshall Islands ranking #7.',
 ]
 
 /**
@@ -243,7 +243,7 @@ function RankingView({
       className={`rank${volume ? ' alluvial is-volume' : ''}${showRow ? ' is-row-on' : ' is-row-off'}`}
     >
       <div className="rank__captions">
-        <p className="rank__caption">Who's best in class? Ranking the Pacific and the world</p>
+        <p className="rank__caption">Who gets a fair share?</p>
         <div className="rank__ledes">
           {CAPTIONS.map((text, i) => {
             const on = i === beat
@@ -287,7 +287,7 @@ function RankingView({
               aria-pressed={!volume}
               onClick={() => onVolume(false)}
             >
-              only ASR ranking
+              Only ASR ranking
             </button>
             <button
               type="button"
@@ -295,7 +295,7 @@ function RankingView({
               aria-pressed={volume}
               onClick={() => onVolume(true)}
             >
-              with ASR values
+              Scaled with actual ASR value
             </button>
           </div>
         </div>
@@ -321,17 +321,7 @@ function RankingView({
       </div>
 
       <div className="rank__legend">
-        <p className="rank__legend-lead">
-          Rank 1 is the lowest Absolute Sustainability Ratio, {YEAR}. The red
-          dashed marks are ASR = 1 and, on prioritarian, ASR = 100.
-          {volume
-            ? ' Ribbon thickness is each country’s ASR.'
-            : ' Lines show rank only.'}
-          {' '}
-          Rest of the world
-          {showRow ? ' is on' : ' — switch it on to see every other country'}.
-          {searchReady ? ' Search any country to follow its line.' : ''}
-        </p>
+        
         <ul className="rank__legend-keys">
           <li>
             <span className="rank__legend-swatch rank__legend-swatch--pacific" aria-hidden="true" />
@@ -344,6 +334,22 @@ function RankingView({
           <li>
             <span className="rank__legend-swatch rank__legend-swatch--world" aria-hidden="true" />
             Rest of the world
+          </li>
+          <li>
+            <span className="rank__legend-cut" aria-hidden="true">
+              <svg viewBox="0 0 28 10" width="28" height="10">
+                <line x1="0" y1="5" x2="28" y2="5" strokeDasharray="5 4" strokeLinecap="butt" />
+              </svg>
+            </span>
+            ASR = 1 · fair share
+          </li>
+          <li>
+            <span className="rank__legend-cut rank__legend-cut--hi" aria-hidden="true">
+              <svg viewBox="0 0 28 10" width="28" height="10">
+                <line x1="0" y1="5" x2="28" y2="5" strokeDasharray="4 3.5" strokeLinecap="butt" />
+              </svg>
+            </span>
+            ASR = 100 · prioritarian extreme
           </li>
         </ul>
       </div>

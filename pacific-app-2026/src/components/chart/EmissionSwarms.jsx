@@ -257,23 +257,24 @@ function AskNote({ box, opacity, children, variant }) {
 function AskLeader({ ask, opacity }) {
   if (opacity <= 0.001) return null
   const { line } = ask
-  const dx = line.x2 - line.x1
-  const dy = line.y2 - line.y1
-  const len = Math.hypot(dx, dy) || 1
-  const bow = Math.min(52, Math.max(18, len * 0.2))
-  const nx = -dy / len
-  const ny = dx / len
-  const side = nx >= 0 ? 1 : -1
-  const mx = (line.x1 + line.x2) / 2 + nx * bow * side
-  const my = (line.y1 + line.y2) / 2 + ny * bow * side
-  const d = `M${line.x1},${line.y1} Q${mx},${my} ${line.x2},${line.y2}`
+  const x0 = line.x2
+  const y0 = line.y2
+  const x1 = line.x1
+  const y1 = line.y1
+  const span = x1 - x0
+  const reach = Math.min(72, Math.max(28, Math.abs(span) * 0.4))
+  const c1x = x0 + Math.sign(span || 1) * Math.min(56, Math.abs(span) * 0.35)
+  const c1y = y0
+  const c2x = x1 - reach
+  const c2y = y1
+  const d = `M${x0},${y0} C${c1x},${c1y} ${c2x},${c2y} ${x1},${y1}`
   return (
     <g className="swarm-eq__ask-g" opacity={opacity}>
       <path className="swarm-eq__ask-line" d={d} />
       <circle
         className="swarm-eq__ask-dot"
-        cx={line.x2}
-        cy={line.y2}
+        cx={x0}
+        cy={y0}
         r="2"
       />
     </g>
@@ -589,30 +590,31 @@ function placeAsks({ num, den, result, width, height, stacked }) {
     : Math.min(260, Math.max(200, result.size * 2.2))
   const x = stacked
     ? Math.max(8, (width - w) / 2)
-    : Math.min(width - w - 12, result.x)
+    : Math.min(width - w - 12, result.x + 50)
   const numH = 52
   const denH = 68
-  const gap = 12
-  const under = result.y + result.size * 0.72
+  const fromSix = 150
   const numBox = {
     x,
-    y: Math.min(height - numH - denH - gap - 8, under + 8),
+    y: Math.max(4, result.y - result.size * 0.5 - 28 - fromSix - numH),
     w,
     h: numH,
   }
   const denBox = {
     x,
-    y: numBox.y + numH + gap,
+    y: Math.min(height - denH - 8, result.y + result.size * 0.52 + 10 + fromSix),
     w,
     h: denH,
   }
+  const endX = x - 10
+  const midY = (box) => box.y + 13
 
   return {
     num: {
       box: numBox,
       line: {
-        x1: x + 10,
-        y1: numBox.y + 8,
+        x1: endX,
+        y1: midY(numBox),
         x2: num.maxX + 4,
         y2: num.cy,
       },
@@ -620,8 +622,8 @@ function placeAsks({ num, den, result, width, height, stacked }) {
     den: {
       box: denBox,
       line: {
-        x1: x + 10,
-        y1: denBox.y + 8,
+        x1: endX,
+        y1: midY(denBox),
         x2: den.maxX + 4,
         y2: den.cy,
       },

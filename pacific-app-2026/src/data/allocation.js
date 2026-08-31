@@ -50,11 +50,12 @@ export const PRINCIPLES = [
     table: 'gf',
     missing: null,
     definition:
-      'Your slice is the fraction of world emissions you already produce. Every country lands on the same ratio — and the same ratio hides wildly different entitlements.',
+      'The allocated share is determined by the country’s current emissions. The more you currently emit, the more you get.',
   },
   {
     id: 'eg',
     title: 'Egalitarian',
+    label: 'Egalitarian (equal per capita)',
     rule: 'Everyone gets the same',
     equation: {
       numerator: 'emissions in 2023',

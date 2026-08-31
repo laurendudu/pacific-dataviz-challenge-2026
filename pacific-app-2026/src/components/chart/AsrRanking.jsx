@@ -7,12 +7,14 @@ import { ChartFrame } from './ChartFrame'
 import { layoutAlluvial, layoutSpine, packedCutoffY, MIN_H, NODE_W } from './alluvialLayout'
 
 const MARGIN = { top: 52, right: 200, bottom: 20, left: 136 }
-const COMPACT_MARGIN = { top: 56, right: 16, bottom: 16, left: 100 }
+const COMPACT_MARGIN = { top: 56, right: 88, bottom: 16, left: 100 }
 const HIT_R = 36
 const LABEL_GAP = 14
+const CUTOFF_LABEL_GAP = 18
 const GREY_BATCHES = 4
-const CUTOFF_TICK = 22
-const CUTOFF_TICK_HI = 56
+const CUTOFF_TICK = 28
+const CUTOFF_DASH = '10 8'
+const CUTOFF_DASH_HI = '8 6'
 
 const SPRING = { type: 'spring', visualDuration: 0.45, bounce: 0.08 }
 const SNAP = { duration: 0 }
@@ -144,13 +146,6 @@ function RankingMarks({
   )
 
   const cutoffSource = cutoffItems ?? rows.items
-  const labels = useMemo(() => {
-    if (!livePr) return []
-    return volume
-      ? placeVolumeLabels(labelled, fat.byIso, lastCol, height)
-      : placeLabels(labelled, lastCol, y, height)
-  }, [labelled, lastCol, y, height, livePr, volume, fat.byIso])
-
   const cutoffYs = useMemo(() => {
     if (volume) {
       return columns.map((_, i) => packedCutoffY(fat.byIso[i], 1))
@@ -170,6 +165,24 @@ function RankingMarks({
     })
     return rank == null ? null : y(rank)
   }, [volume, fat.byIso, lastCol, cutoffSource, rows.maxRank, y])
+
+  const labels = useMemo(() => {
+    if (!livePr) return []
+    const notes = []
+    if (cutoffYs[lastCol] != null) {
+      notes.push({ id: 'asr-1', label: 'ASR = 1', py: cutoffYs[lastCol], hi: false })
+    }
+    if (cutoff100Y != null) {
+      notes.push({ id: 'asr-100', label: 'ASR = 100', py: cutoff100Y, hi: true })
+    }
+    const getPy = volume
+      ? (row) => fat.byIso[lastCol]?.get(row.iso)?.yc ?? null
+      : (row) => {
+          const rank = row.ranks[lastCol] ?? lastRank(row.ranks)
+          return rank == null ? null : y(rank)
+        }
+    return placeAllLabels(labelled, notes, getPy, height)
+  }, [labelled, lastCol, y, height, livePr, volume, fat.byIso, cutoffYs, cutoff100Y])
 
   const hits = useMemo(() => {
     const pts = []
@@ -449,11 +462,30 @@ function RankingMarks({
         transition={colTransition}
       >
         {labels.map((item) => {
-          const row = item.row
           const px = x[lastCol]
           const py = item.py
           const ly = item.placed
           const lead = Math.abs(ly - py) > 6
+          const tx = px + (lead ? 24 : volume ? NODE_W / 2 + 8 : 12)
+          if (item.kind === 'cutoff') {
+            return (
+              <g
+                key={`cutlbl-${item.id}`}
+                className={`rank__cutoff-label${item.hi ? ' rank__cutoff-label--hi' : ''}`}
+              >
+                {lead ? (
+                  <path
+                    className="rank__leader rank__leader--cutoff"
+                    d={`M${px + (volume ? NODE_W / 2 + 4 : 6)},${py} C${px + 14},${py} ${px + 14},${ly} ${px + 20},${ly}`}
+                  />
+                ) : null}
+                <text x={tx} y={ly} dy="0.32em" textAnchor="start">
+                  {item.label}
+                </text>
+              </g>
+            )
+          }
+          const row = item.row
           const faded = dim && hoveredIso !== row.iso
           const rankMark = formatRank(labelRank(row, lastLive))
           return (
@@ -467,12 +499,7 @@ function RankingMarks({
                   d={`M${px + (volume ? NODE_W / 2 + 4 : 6)},${py} C${px + 14},${py} ${px + 14},${ly} ${px + 20},${ly}`}
                 />
               ) : null}
-              <text
-                x={px + (lead ? 24 : volume ? NODE_W / 2 + 8 : 12)}
-                y={ly}
-                dy="0.32em"
-                textAnchor="start"
-              >
+              <text x={tx} y={ly} dy="0.32em" textAnchor="start">
                 {row.name}
                 {rankMark ? (
                   <tspan className="rank__label-n">{`  ${rankMark}`}</tspan>
@@ -495,15 +522,17 @@ function RankingMarks({
           {compact ? null : (
             <>
               <rect
-                x={x[tiedCol] + 10}
-                y={tieLabelBelow ? tieY + 4 : tieY - 18}
-                width={78}
+                x={x[tiedCol] - 92}
+                y={tieLabelBelow ? tieY + 4 : tieY - 8}
+                width={82}
                 height={14}
                 rx={2}
               />
               <text
-                x={x[tiedCol] + 14}
-                y={tieLabelBelow ? tieY + 15 : tieY - 7}
+                x={x[tiedCol] - 10}
+                y={tieLabelBelow ? tieY + 15 : tieY}
+                dy={tieLabelBelow ? undefined : '0.32em'}
+                textAnchor="end"
               >
                 {`all ${tieCount} tied`}
               </text>
@@ -522,15 +551,10 @@ function RankingMarks({
             x={x[lastCol]}
             y={cutoff100Y}
             height={height}
-            compact={compact}
-            anchor="end"
             kind="hi"
-            label="ASR = 100"
-            tick={CUTOFF_TICK_HI}
           />
         </motion.g>
         {columns.map((col, i) => {
-          const anchor = i === 0 ? 'start' : i === lastCol ? 'end' : 'middle'
           const on = i === 0 ? 1 : i === 1 ? revealEg : revealPr
           return (
             <motion.g
@@ -543,25 +567,11 @@ function RankingMarks({
                 x={x[i]}
                 y={cutoffYs[i]}
                 height={height}
-                compact={compact}
-                anchor={anchor}
                 kind="one"
-                label="ASR = 1"
               />
             </motion.g>
           )
         })}
-        <g clipPath={`url(#${clipId})`}>
-          <CutoffJoin
-            ys={cutoffYs}
-            x={x}
-            height={height}
-            kind="one"
-            showEg={showEg}
-            showPr={showPr}
-            transition={colTransition}
-          />
-        </g>
       </g>
 
       <rect
@@ -606,45 +616,21 @@ function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }
   )
 }
 
-function CutoffMark({ x, y: py, height, compact, anchor, kind = 'one', label = 'ASR = 1', tick = CUTOFF_TICK }) {
+function CutoffMark({ x, y: py, height, kind = 'one', tick = CUTOFF_TICK }) {
   if (py == null) return null
   const yLine = Math.max(0.75, Math.min(height - 1.5, py))
-  const labelX = compact ? x : (anchor === 'end' ? x - tick - 6 : x + tick + 6)
-  const labelAnchor = compact ? 'middle' : (anchor === 'end' ? 'end' : 'start')
-  const labelY = yLine < 14 ? yLine + 12 : yLine - 6
+  const hi = kind === 'hi'
   return (
-    <g className={`rank__cutoff${kind === 'hi' ? ' rank__cutoff--hi' : ''}`}>
-      <line x1={x - tick} x2={x + tick} y1={yLine} y2={yLine} />
-      <text x={labelX} y={labelY} textAnchor={labelAnchor}>{label}</text>
+    <g className={`rank__cutoff${hi ? ' rank__cutoff--hi' : ''}`}>
+      <line
+        x1={x - tick}
+        x2={x + tick}
+        y1={yLine}
+        y2={yLine}
+        strokeLinecap="butt"
+        strokeDasharray={hi ? CUTOFF_DASH_HI : CUTOFF_DASH}
+      />
     </g>
-  )
-}
-
-function CutoffJoin({ ys, x, height, kind = 'one', showEg, showPr, transition }) {
-  const pts = ys
-    .map((py, i) => {
-      const on = i === 0 || (i === 1 && showEg) || (i === 2 && showPr)
-      if (!on || py == null) return null
-      return { x: x[i], y: Math.max(0.75, Math.min(height - 1.5, py)) }
-    })
-    .filter(Boolean)
-  if (pts.length < 2) return null
-  let d = `M${pts[0].x},${pts[0].y}`
-  for (let i = 1; i < pts.length; i += 1) {
-    const prev = pts[i - 1]
-    const cur = pts[i]
-    const mid = (prev.x + cur.x) / 2
-    d += ` C${mid},${prev.y} ${mid},${cur.y} ${cur.x},${cur.y}`
-  }
-  return (
-    <motion.path
-      className={`rank__cutoff-join${kind === 'hi' ? ' rank__cutoff-join--hi' : ''}`}
-      d={d}
-      pointerEvents="none"
-      initial={false}
-      animate={{ opacity: 1 }}
-      transition={transition}
-    />
   )
 }
 
@@ -714,63 +700,95 @@ function tiedColumn(items) {
   return -1
 }
 
-function placeVolumeLabels(labelled, byIso, col, height) {
-  const colMap = byIso[col]
-  if (!colMap) return []
-  const items = labelled
+function placeAllLabels(labelled, notes, getPy, height) {
+  const locked = packY(
+    notes
+      .filter((n) => n.py != null && Number.isFinite(n.py))
+      .map((n) => ({
+        kind: 'cutoff',
+        id: n.id,
+        label: n.label,
+        hi: n.hi,
+        py: n.py,
+        placed: Math.max(0, Math.min(height, n.py)),
+      })),
+    height,
+    CUTOFF_LABEL_GAP,
+  )
+  const countries = labelled
     .map((row) => {
-      const node = colMap.get(row.iso)
-      if (!node) return null
-      return { row, py: node.yc, placed: node.yc }
+      const py = getPy(row)
+      if (py == null || !Number.isFinite(py)) return null
+      return { kind: 'country', row, py, placed: py }
     })
     .filter(Boolean)
-    .sort((a, b) => a.placed - b.placed)
-
-  let prev = -Infinity
-  for (const item of items) {
-    item.placed = Math.max(item.placed, prev + LABEL_GAP)
-    prev = item.placed
-  }
-  prev = height + LABEL_GAP
-  for (let i = items.length - 1; i >= 0; i -= 1) {
-    items[i].placed = Math.min(items[i].placed, prev - LABEL_GAP, height)
-    prev = items[i].placed
-  }
-  prev = -LABEL_GAP
-  for (const item of items) {
-    item.placed = Math.max(item.placed, prev + LABEL_GAP, 0)
-    prev = item.placed
-  }
-  return items
+  const packed = dodgeBlockers(
+    countries,
+    locked.map((n) => n.placed),
+    height,
+    LABEL_GAP,
+  )
+  return [...locked, ...packed]
 }
 
-/** Pack right-side labels in pixel space, then pull the stack back into the plot. */
-function placeLabels(labelled, col, y, height) {
-  const items = labelled
-    .map((row) => {
-      const rank = row.ranks[col] ?? lastRank(row.ranks)
-      if (rank == null) return null
-      return { row, py: y(rank), placed: y(rank) }
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.placed - b.placed)
-
+function packY(items, height, gap) {
+  if (!items.length) return items
+  const sorted = [...items].sort((a, b) => a.placed - b.placed)
   let prev = -Infinity
-  for (const item of items) {
-    item.placed = Math.max(item.placed, prev + LABEL_GAP)
+  for (const item of sorted) {
+    item.placed = Math.max(item.placed, prev + gap)
     prev = item.placed
   }
-  prev = height + LABEL_GAP
-  for (let i = items.length - 1; i >= 0; i -= 1) {
-    items[i].placed = Math.min(items[i].placed, prev - LABEL_GAP, height)
-    prev = items[i].placed
+  prev = height + gap
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    sorted[i].placed = Math.min(sorted[i].placed, prev - gap, height)
+    prev = sorted[i].placed
   }
-  prev = -LABEL_GAP
-  for (const item of items) {
-    item.placed = Math.max(item.placed, prev + LABEL_GAP, 0)
+  prev = -gap
+  for (const item of sorted) {
+    item.placed = Math.max(item.placed, prev + gap, 0)
     prev = item.placed
   }
-  return items
+  return sorted
+}
+
+function dodgeBlockers(items, blockers, height, gap) {
+  const occ = [...blockers].sort((a, b) => a - b)
+  const dodgeUp = (value) => {
+    let placed = value
+    for (const b of occ) {
+      if (placed > b - gap && placed < b + gap) placed = b + gap
+    }
+    return placed
+  }
+  const dodgeDown = (value) => {
+    let placed = value
+    for (let i = occ.length - 1; i >= 0; i -= 1) {
+      const b = occ[i]
+      if (placed > b - gap && placed < b + gap) placed = b - gap
+    }
+    return placed
+  }
+  const sorted = [...items].sort((a, b) => a.placed - b.placed)
+  let prev = -Infinity
+  for (const item of sorted) {
+    item.placed = dodgeUp(Math.max(item.placed, prev + gap))
+    prev = item.placed
+  }
+  prev = height + gap
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    sorted[i].placed = dodgeDown(Math.min(sorted[i].placed, prev - gap, height))
+    prev = sorted[i].placed
+  }
+  prev = -gap
+  for (const item of sorted) {
+    item.placed = dodgeUp(Math.max(item.placed, prev + gap, 0))
+    prev = item.placed
+  }
+  for (const item of sorted) {
+    item.placed = Math.max(0, Math.min(height, item.placed))
+  }
+  return sorted
 }
 
 function lastRank(ranks) {

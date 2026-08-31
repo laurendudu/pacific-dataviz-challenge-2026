@@ -34,8 +34,8 @@
   --text-muted:     var(--ink-muted);
 
   /* Categorical series — fixed order, never cycled */
-  --series-1: #3b9af0;  /* sky       */
-  --series-2: #ff6b5b;  /* coral — large emitters, sits with the globe ramp */
+  --series-1: #5b6ee1;  /* periwinkle — Pacific category                    */
+  --series-2: #ff8a1f;  /* bright orange — large emitters                   */
   --series-3: #12bfa8;  /* lagoon    */
   --series-4: #f9a61a;  /* marigold  */
   --series-5: #ff6fa8;  /* bubblegum */
@@ -43,8 +43,8 @@
   --series-7: #9b7bff;  /* lilac     */
   --series-8: #ff5c7a;  /* poppy     */
 
-  --series-1-ink: #1668c4;
-  --series-2-ink: #d73729;
+  --series-1-ink: #3d4bb8;
+  --series-2-ink: #c24e00;
   --series-3-ink: #0a8272;
   --series-4-ink: #a26600;
   --series-5-ink: #cd3a75;
@@ -66,9 +66,9 @@
   /* Semantic roles for this story */
   --safe:      var(--status-good);      /* within planetary boundary / ASR < 1 */
   --breached:  var(--status-critical);  /* boundary transgressed / ASR > 1     */
-  --pacific:   var(--series-3);         /* Pacific nations                     */
+  --pacific:   var(--series-1);         /* Pacific nations                     */
   --emitter:   var(--series-2);         /* high-ASR economies                  */
-  --pacific-ink: var(--series-3-ink);
+  --pacific-ink: var(--series-1-ink);
   --emitter-ink: var(--series-2-ink);
   --world:     #b7afd0;                 /* rest-of-world marks on paper        */
 

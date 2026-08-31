@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { geoCentroid, geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
 import { feature as topoFeature } from 'topojson-client'
 import land110 from 'world-atlas/land-110m.json'
@@ -74,12 +74,14 @@ function placeLabels(marks) {
 
 /**
  * Pacific-centred map. D3 only projects; every mark is JSX.
- * Each territory is the same ASR disc as the grid: well, shade, and a red
- * dashed ring at ASR = 1. `hideFill` keeps the ring and drops the shade.
+ * Each territory is the same ASR disc as the grid: an empty well (stroke
+ * only, no country land), shade, and a red dashed ring at ASR = 1.
+ * `hideFill` keeps the ring and drops the shade.
  */
 export function AllocationMap({ values, loaded, principle, year, hideFill = false }) {
   const [ref, dms] = useChartDimensions(NO_MARGIN)
   const [tip, setTip] = useState(null)
+  const wellMaskId = `alloc-wells-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   const width = dms.width
   const height = dms.height
 
@@ -121,7 +123,7 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
   }
 
   const title = principle
-    ? `${principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
+    ? `${principle.label ?? principle.title} Absolute Sustainability Ratios for Pacific territories, ${year}`
     : `Pacific territories and the ASR = 1 ring, ${year}`
 
   return (
@@ -136,25 +138,41 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
           aria-label={title}
         >
           <title>{title}</title>
-          {geom.graticuleD ? (
-            <path
-              className="alloc-map__graticule"
-              d={geom.graticuleD}
-              fill="none"
-            />
-          ) : null}
-          {geom.landD ? (
-            <path className="alloc-map__land" d={geom.landD} />
-          ) : null}
-          {geom.marks.map((m) => (
-            m.d ? (
+          <defs>
+            <mask id={wellMaskId} maskUnits="userSpaceOnUse">
+              <rect x={0} y={0} width={width} height={height} fill="white" />
+              {geom.marks.map((m) => (
+                <circle
+                  key={m.iso}
+                  cx={m.x}
+                  cy={m.y}
+                  r={m.rInner}
+                  fill="black"
+                />
+              ))}
+            </mask>
+          </defs>
+          <g mask={`url(#${wellMaskId})`}>
+            {geom.graticuleD ? (
               <path
-                key={`land-${m.iso}`}
-                className="alloc-map__island"
-                d={m.d}
+                className="alloc-map__graticule"
+                d={geom.graticuleD}
+                fill="none"
               />
-            ) : null
-          ))}
+            ) : null}
+            {geom.landD ? (
+              <path className="alloc-map__land" d={geom.landD} />
+            ) : null}
+            {geom.marks.map((m) => (
+              m.d ? (
+                <path
+                  key={`land-${m.iso}`}
+                  className="alloc-map__island"
+                  d={m.d}
+                />
+              ) : null
+            ))}
+          </g>
 
           <g className="alloc-map__zones">
             {geom.stacked.map((m) => {
@@ -173,9 +191,9 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
                     size={SIZE}
                     asr={m.missing ? 0 : m.asr}
                     ringGap={MAP_ASR_RING_GAP}
+                    land={false}
                     iso={m.iso}
                     name={m.name}
-                    feature={m.feat}
                     hideShare={m.missing}
                     hideFill={hideFill}
                     onHover={(e) => moveTip(e, m)}

@@ -170,6 +170,10 @@ function ScatterMarks({
   )
 
   const fairY = y(1)
+  const hiY = y(100)
+  const methodMax = max(points, (c) => asrOf(c, methodId))
+  const showFair = fairY >= 0 && fairY <= height
+  const showHi = methodMax >= 100 && hiY >= 0 && hiY <= height
 
   const onMove = (event) => {
     if (!delaunay || !onHover) return
@@ -223,13 +227,6 @@ function ScatterMarks({
         </motion.g>
       </AnimatePresence>
 
-      {fairY >= 0 && fairY <= height ? (
-        <g className="scatter-marks__fair" pointerEvents="none">
-          <line x1={0} x2={width} y1={fairY} y2={fairY} />
-          <text x={width} y={fairY - 5} textAnchor="end">ASR = 1</text>
-        </g>
-      ) : null}
-
       <g className="scatter-marks__world">
         <AnimatePresence initial={false}>
           {world.map((c) => (
@@ -273,6 +270,13 @@ function ScatterMarks({
         </AnimatePresence>
       </g>
 
+      {showFair ? (
+        <FairMark y={fairY} width={width} height={height} label="ASR = 1" />
+      ) : null}
+      {showHi ? (
+        <FairMark y={hiY} width={width} height={height} label="ASR = 100" kind="hi" />
+      ) : null}
+
       {hovered ? (
         <motion.circle
           className="scatter-dot__halo"
@@ -291,6 +295,29 @@ function ScatterMarks({
         onPointerMove={onMove}
         onPointerLeave={() => onHover?.(null)}
       />
+    </g>
+  )
+}
+
+/** Horizontal ASR cutoff. ASR = 100 is omitted by the caller when this
+ *  method never reaches it — grandfathering and egalitarian stay below. */
+function FairMark({ y: py, width, height, label, kind = 'one' }) {
+  const hi = kind === 'hi'
+  const labelY = py < 14 ? Math.min(py + 12, height - 2) : py - 5
+  return (
+    <g
+      className={`scatter-marks__fair${hi ? ' scatter-marks__fair--hi' : ''}`}
+      pointerEvents="none"
+    >
+      <line
+        x1={0}
+        x2={width}
+        y1={py}
+        y2={py}
+        strokeLinecap="butt"
+        strokeDasharray={hi ? '8 6' : '10 8'}
+      />
+      <text x={width} y={labelY} textAnchor="end">{label}</text>
     </g>
   )
 }
