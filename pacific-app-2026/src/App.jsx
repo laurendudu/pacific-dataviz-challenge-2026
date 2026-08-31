@@ -19,7 +19,7 @@ import { Timeline, useChartTimeline } from './components/scroll/Timeline'
  * full-viewport with no pinning — handy for eyeballing a single beat while
  * tuning the choreography. The swarm scene is a following section, so use
  * the normal site and scroll (or jump to `#budget` / `#asr-viz` /
- * `#allocation` / `#ranking` / `#pacific-vs-world` / `#palau`).
+ * `#allocation` / `#ranking` / `#pacific-vs-world` / `#palau` / `#colophon`).
  * The global ASR fraction is a later beat of `#budget`. How to read
  * the disc is `#asr-viz`.
  *

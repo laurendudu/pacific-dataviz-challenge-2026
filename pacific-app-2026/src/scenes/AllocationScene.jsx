@@ -79,7 +79,7 @@ function AllocationView({ beat, tables, rows }) {
         </p>
         <p className="alloc__lede">
           Allocation principles are the rules that decide how to split a shared budget.
-          How much should we allocate to the Pacific, and how does the Pacific actully respect its share? 
+          How much should we allocate to the Pacific, and how does the Pacific actually respect its share? 
         </p>
       </div>
 

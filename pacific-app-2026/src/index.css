@@ -1767,6 +1767,7 @@ svg { display: block; }
 }
 .scatter__search {
   flex: 0 0 auto;
+  order: -1;
 }
 .scatter__controls .rank-search {
   margin-top: 0;
@@ -2102,26 +2103,30 @@ svg { display: block; }
   stroke: var(--hairline);
   stroke-width: 1;
 }
-.rank__cutoff line {
+.rank__cutoff line,
+.rank__cutoff path {
   fill: none;
   stroke: var(--status-critical);
-  stroke-width: 3;
-  stroke-dasharray: 10 8;
+  stroke-width: 2.5;
+  stroke-dasharray: 14 12;
   stroke-linecap: butt;
   stroke-linejoin: miter;
   stroke-opacity: 1;
 }
-.rank__cutoff--hi line {
+.rank__cutoff--hi line,
+.rank__cutoff--hi path {
   stroke-width: 2;
-  stroke-dasharray: 8 6;
+  stroke-dasharray: 8 7;
 }
-.alluvial .rank__cutoff line {
-  stroke-width: 3;
-  stroke-dasharray: 10 8;
+.alluvial .rank__cutoff line,
+.alluvial .rank__cutoff path {
+  stroke-width: 2.5;
+  stroke-dasharray: 14 12;
 }
-.alluvial .rank__cutoff--hi line {
+.alluvial .rank__cutoff--hi line,
+.alluvial .rank__cutoff--hi path {
   stroke-width: 2;
-  stroke-dasharray: 8 6;
+  stroke-dasharray: 8 7;
 }
 .rank__cutoff-label text {
   fill: var(--status-critical);
@@ -2552,26 +2557,6 @@ svg { display: block; }
 .rank__legend-swatch--world {
   background: var(--world);
   opacity: 0.72;
-}
-.rank__legend-cut {
-  flex-shrink: 0;
-  display: block;
-  width: 1.5rem;
-  height: 0.7rem;
-  color: var(--status-critical);
-}
-.rank__legend-cut svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.rank__legend-cut line {
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: butt;
-}
-.rank__legend-cut--hi line {
-  stroke-width: 2;
 }
 
 .rank__tooltip {
@@ -3004,7 +2989,7 @@ svg { display: block; }
   font-size: var(--step-0);
   color: var(--ink-secondary);
   max-width: var(--measure);
-  margin-bottom: var(--space-l);
+  margin-bottom: var(--space-s);
 }
 
 .colophon__meta {
@@ -3034,11 +3019,20 @@ svg { display: block; }
   max-width: var(--measure);
 }
 
+.colophon__sources {
+  margin: 0;
+  padding-left: 1.1em;
+  list-style: disc;
+  display: grid;
+  gap: 0.45em;
+}
+.colophon__sources li::marker { color: var(--ink-muted); }
+
 .colophon__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-s);
-  margin-bottom: var(--space-m);
+  margin-bottom: var(--space-l);
 }
 .colophon__btn {
   display: inline-flex;

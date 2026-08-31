@@ -13,15 +13,16 @@
  *   China 34%, United States 14%, India 6.0%, Russia 5.6%,
  *   Japan 2.5%, Iran 2.4%, Indonesia 2.3%, Saudi Arabia 2.1%
  *
- * Australia is the ninth by name and not by that rule — it is 16th. It is here
- * because it is the Pacific's neighbour and the region's largest economy, it
- * overshoots by 20× per person, and the story is about the Pacific: leaving it
- * out would let the reader miss who is standing next to the islands.
+ * Three more are here by name and not by that rule:
  *
- * Replaces an older list — France, the UK, Germany, Qatar — that was really
- * "familiar rich countries". They overshoot per person, but they rank 26th,
- * 23rd, 11th and 34th on the overshoot they caused, and picking them over
- * Russia, Japan, Iran and Indonesia was flattering to the wrong countries.
+ *   Australia (16th) is the Pacific's neighbour and the region's largest
+ *   economy, and it overshoots by 20× per person — leaving it out would let
+ *   the reader miss who is standing next to the islands.
+ *   France (26th) administers two of the territories in this story, New
+ *   Caledonia and French Polynesia, so its footprint is part of the Pacific's.
+ *   Qatar (34th) is the extreme of per-person overshoot — small enough to
+ *   cause little of the total, far enough past a fair share to mark the
+ *   other end of the scale from the islands.
  *
  * Numbers from `data_viz/contributions.csv` and `asr.json`, 2000-2023.
  */
@@ -35,6 +36,8 @@ export const EMITTER_LIST = [
   'IDN',
   'SAU',
   'AUS',
+  'FRA',
+  'QAT',
 ]
 
 export const EMITTERS = new Set(EMITTER_LIST)

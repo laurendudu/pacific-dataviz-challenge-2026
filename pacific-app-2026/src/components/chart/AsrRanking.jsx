@@ -14,8 +14,8 @@ const CUTOFF_LABEL_GAP = 18
 const GREY_BATCHES = 4
 const CUTOFF_TICK = 28
 const CUTOFF_TEXT_GAP = 5
-const CUTOFF_DASH = '10 8'
-const CUTOFF_DASH_HI = '8 6'
+const CUTOFF_DASH = '14 12'
+const CUTOFF_DASH_HI = '8 7'
 
 const SPRING = { type: 'spring', visualDuration: 0.45, bounce: 0.08 }
 const SNAP = { duration: 0 }
@@ -276,6 +276,14 @@ function RankingMarks({
         <clipPath id={clipId}>
           <rect x={-8} y={-12} width={Math.max(0, clipRight + 8)} height={height + 24} />
         </clipPath>
+        <clipPath id={`${clipId}-cut`}>
+          <rect
+            x={-8}
+            y={-12}
+            width={Math.max(0, clipRight + CUTOFF_TICK + 8)}
+            height={height + 24}
+          />
+        </clipPath>
       </defs>
 
       {columns.map((col, i) => {
@@ -480,9 +488,11 @@ function RankingMarks({
           const py = item.py
           const ly = item.placed
           const lead = Math.abs(ly - py) > 6
+          const lineEnd = x[lastCol] + CUTOFF_TICK
           const tickStart = px + (volume ? NODE_W / 2 : 0)
-          const tickEnd = tickStart + CUTOFF_TICK
-          const tx = tickEnd + CUTOFF_TEXT_GAP
+          const tx = item.kind === 'cutoff' || item.col === lastCol
+            ? lineEnd + CUTOFF_TEXT_GAP
+            : tickStart + CUTOFF_TICK + CUTOFF_TEXT_GAP
           if (item.kind === 'cutoff') {
             return (
               <g
@@ -492,7 +502,7 @@ function RankingMarks({
                 {lead ? (
                   <path
                     className="rank__leader rank__leader--cutoff"
-                    d={`M${tickEnd},${py} C${tickEnd + 4},${py} ${tickEnd + 4},${ly} ${tx - 2},${ly}`}
+                    d={`M${lineEnd},${py} C${lineEnd + 4},${py} ${lineEnd + 4},${ly} ${tx - 2},${ly}`}
                   />
                 ) : null}
                 <text x={tx} y={ly} dy="0.32em" textAnchor="start">
@@ -557,40 +567,33 @@ function RankingMarks({
         </motion.g>
       ) : null}
 
-      <g className="rank__cutoffs" pointerEvents="none">
+      <g
+        className="rank__cutoffs"
+        pointerEvents="none"
+        clipPath={`url(#${clipId}-cut)`}
+      >
+        <motion.g
+          initial={false}
+          animate={{ opacity: revealEg }}
+          transition={colTransition}
+        >
+          <CutoffRule
+            points={asr1Points(x, cutoffYs, CUTOFF_TICK)}
+            height={height}
+            kind="one"
+          />
+        </motion.g>
         <motion.g
           initial={false}
           animate={{ opacity: revealPr }}
           transition={colTransition}
         >
-          <CutoffMark
-            x={x[lastCol]}
-            y={cutoff100Y}
+          <CutoffRule
+            points={asr100Points(x, cutoff100Y, CUTOFF_TICK)}
             height={height}
             kind="hi"
-            outset={volume ? NODE_W / 2 : 0}
           />
         </motion.g>
-        {columns.map((col, i) => {
-          if (i === 0) return null
-          const on = i === 1 ? revealEg : revealPr
-          return (
-            <motion.g
-              key={`cut-${col.id}`}
-              initial={false}
-              animate={{ opacity: on }}
-              transition={colTransition}
-            >
-              <CutoffMark
-                x={x[i]}
-                y={cutoffYs[i]}
-                height={height}
-                kind="one"
-                outset={volume ? NODE_W / 2 : 0}
-              />
-            </motion.g>
-          )
-        })}
       </g>
 
       <rect
@@ -635,25 +638,53 @@ function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }
   )
 }
 
-/** Short dashed tick to the right of a column spine — never a span
- *  between columns. `outset` clears a volume node. */
-function CutoffMark({ x, y: py, height, kind = 'one', tick = CUTOFF_TICK, outset = 0 }) {
-  if (py == null) return null
-  const yLine = Math.max(0.75, Math.min(height - 1.5, py))
+/** Straight dashed segments only — cubics ate the gaps on a thick stroke. */
+function CutoffRule({ points, height, kind = 'one' }) {
   const hi = kind === 'hi'
-  const x1 = x + outset
+  const dash = hi ? CUTOFF_DASH_HI : CUTOFF_DASH
+  const pts = []
+  for (const p of points) {
+    if (p == null || p.y == null || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
+    pts.push({
+      x: p.x,
+      y: Math.max(0.75, Math.min(height - 1.5, p.y)),
+    })
+  }
+  if (pts.length < 2) return null
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ')
   return (
     <g className={`rank__cutoff${hi ? ' rank__cutoff--hi' : ''}`}>
-      <line
-        x1={x1}
-        x2={x1 + tick}
-        y1={yLine}
-        y2={yLine}
+      <path
+        d={d}
+        fill="none"
         strokeLinecap="butt"
-        strokeDasharray={hi ? CUTOFF_DASH_HI : CUTOFF_DASH}
+        strokeLinejoin="miter"
+        strokeDasharray={dash}
       />
     </g>
   )
+}
+
+/** ASR = 1 across egalitarian → prioritarian, then a short overhang for the label. */
+function asr1Points(x, cutoffYs, tick) {
+  const eg = x[1] != null && cutoffYs[1] != null ? { x: x[1], y: cutoffYs[1] } : null
+  const pr = x[2] != null && cutoffYs[2] != null ? { x: x[2], y: cutoffYs[2] } : null
+  if (eg && pr) return [eg, pr, { x: pr.x + tick, y: pr.y }]
+  if (pr) return [{ x: pr.x, y: pr.y }, { x: pr.x + tick, y: pr.y }]
+  if (eg) return [eg, { x: eg.x + tick, y: eg.y }]
+  return []
+}
+
+/** ASR = 100 lives on prioritarian: across most of the eg→pr gap, through the spine, into the label. */
+function asr100Points(x, y100, tick) {
+  if (y100 == null || x[2] == null) return []
+  const pr = x[2]
+  const eg = x[1] ?? pr
+  const start = pr - (pr - eg) * 0.45
+  return [
+    { x: start, y: y100 },
+    { x: pr + tick, y: y100 },
+  ]
 }
 
 /** Final three-column x: left, centre, right. Never recenters during reveal. */

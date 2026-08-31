@@ -321,7 +321,6 @@ function RankingView({
       </div>
 
       <div className="rank__legend">
-        
         <ul className="rank__legend-keys">
           <li>
             <span className="rank__legend-swatch rank__legend-swatch--pacific" aria-hidden="true" />
@@ -334,22 +333,6 @@ function RankingView({
           <li>
             <span className="rank__legend-swatch rank__legend-swatch--world" aria-hidden="true" />
             Rest of the world
-          </li>
-          <li>
-            <span className="rank__legend-cut" aria-hidden="true">
-              <svg viewBox="0 0 28 10" width="28" height="10">
-                <line x1="0" y1="5" x2="28" y2="5" strokeDasharray="5 4" strokeLinecap="butt" />
-              </svg>
-            </span>
-            ASR = 1 · fair share
-          </li>
-          <li>
-            <span className="rank__legend-cut rank__legend-cut--hi" aria-hidden="true">
-              <svg viewBox="0 0 28 10" width="28" height="10">
-                <line x1="0" y1="5" x2="28" y2="5" strokeDasharray="4 3.5" strokeLinecap="butt" />
-              </svg>
-            </span>
-            ASR = 100 · prioritarian extreme
           </li>
         </ul>
       </div>

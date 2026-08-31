@@ -54,6 +54,11 @@ export const CHARTS = [
     label: 'The case of Palau',
     target: { type: 'hash', id: 'palau' },
   },
+  {
+    id: 'credits',
+    label: 'Credits',
+    target: { type: 'hash', id: 'colophon', progress: 0 },
+  },
 ]
 
 const BUDGET_ACTIVE_AT = 0.42
@@ -102,6 +107,7 @@ function scrollToSection(id, instant, { progress, beat } = {}) {
 }
 
 function readActiveChartId() {
+  if (sectionIsActive('colophon')) return 'credits'
   if (sectionIsActive('palau')) return 'palau'
   if (sectionIsActive('pacific-vs-world')) return 'pacific-vs-world'
   if (sectionIsActive('ranking')) return 'ranking'

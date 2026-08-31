@@ -81,11 +81,7 @@ function ScatterView({ beat }) {
   const scrolledId = X_VARS[Math.min(beat, X_VARS.length - 1)].id
 
   useEffect(() => {
-    if (!allUnlocked) {
-      setPicked(null)
-      setPinnedIso(null)
-      setPreviewIso(null)
-    }
+    if (!allUnlocked) setPicked(null)
   }, [allUnlocked])
 
   const xVarId = allUnlocked && picked ? picked : scrolledId
@@ -140,8 +136,27 @@ function ScatterView({ beat }) {
         </p>
       </div>
 
-      <div className="scatter__controls" role="group" aria-label="Horizontal axis">
+      <div className="scatter__controls" role="group" aria-label="Country search and horizontal axis">
         <AnimatePresence initial={false}>
+          {countries.length > 0 ? (
+            <motion.div
+              key="country-search"
+              className="scatter__search"
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              transition={FADE}
+            >
+              <RankSearch
+                enabled
+                items={searchItems}
+                pinnedIso={pinnedIso}
+                onPick={setPinnedIso}
+                onPreview={setPreviewIso}
+                reduceMotion={reduceMotion}
+              />
+            </motion.div>
+          ) : null}
           {X_VARS.filter((_, i) => allUnlocked || i <= beat).map((v) => {
             const i = X_VARS.indexOf(v)
             return (
@@ -164,25 +179,6 @@ function ScatterView({ beat }) {
               </motion.button>
             )
           })}
-          {allUnlocked && countries.length > 0 ? (
-            <motion.div
-              key="country-search"
-              className="scatter__search"
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-              transition={FADE}
-            >
-              <RankSearch
-                enabled
-                items={searchItems}
-                pinnedIso={pinnedIso}
-                onPick={setPinnedIso}
-                onPreview={setPreviewIso}
-                reduceMotion={reduceMotion}
-              />
-            </motion.div>
-          ) : null}
         </AnimatePresence>
       </div>
 
