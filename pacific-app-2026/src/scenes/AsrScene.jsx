@@ -1,5 +1,5 @@
 import { Scene } from '../components/scroll/Scene'
-import { AsrCountry, ASR_RING_GAP, asrRadii } from '../components/chart/AsrCountry'
+import { AsrCountry, ASR_FLOOR, ASR_RING_GAP, asrRadii } from '../components/chart/AsrCountry'
 import { EXAMPLES, YEAR, useAsr } from '../data/asr'
 
 const SIZE = 59
@@ -9,22 +9,28 @@ const SIZE = 59
  * a well-below-1 atoll, a Pacific state just under its fair share, a
  * Pacific state over it, and a large emitter far past the 1-ring.
  *
- * The shared frame is sized to Fiji (ASR ~3.4) so that disc is fully
- * visible. China's ~11.5 disc is drawn at true radius and clips at the
- * frame — the caption carries the number.
+ * All four share one frame, sized to hug the largest disc — China at
+ * ~11.5. The SVG width is capped in CSS, so a looser frame would only
+ * shrink every glyph.
+ *
+ * The scale itself is explained on `#asr-viz`, where the reader first
+ * meets a disc — see `AsrScaleGuide`.
  */
 export function AsrScene() {
   const { values } = useAsr(YEAR)
-  const rOne = asrRadii(SIZE, 1).rOne
-  const frameRadius = rOne * 3.5
 
   const glyphs = EXAMPLES.map((ex) => ({
     ...ex,
     asr: values?.get(ex.iso) ?? ex.asr,
   }))
 
+  const frameRadius = Math.max(
+    asrRadii(SIZE, 1).rOne,
+    ...glyphs.map((g) => asrRadii(SIZE, g.asr).rAsr),
+  ) + 10
+
   return (
-    <Scene id="asr" pages={2}>
+    <Scene id="asr" pages={1}>
       {() => (
         <div className="asr">
           <div className="asr__captions">
@@ -48,7 +54,8 @@ export function AsrScene() {
           </div>
 
           <p className="asr__legend">
-            The country sits in the well. Red dashed ring is ASR = 1 ({ASR_RING_GAP}px out).
+            The country sits in the well. The shade is log₁₀ from {ASR_FLOOR}; the
+            red dashed ring is ASR = 1, {ASR_RING_GAP}px from the well.
           </p>
         </div>
       )}

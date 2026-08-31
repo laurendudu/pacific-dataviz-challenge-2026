@@ -1,6 +1,7 @@
-import { useId, useMemo } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { useId, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { geoAzimuthalEqualArea, geoCentroid, geoOrthographic, geoPath } from 'd3-geo'
+import { scaleLog } from 'd3-scale'
 import { feature as topoFeature } from 'topojson-client'
 import { format } from 'd3-format'
 import land110 from 'world-atlas/land-110m.json'
@@ -8,31 +9,97 @@ import { findCountryFeature } from '../../data/asr'
 
 const WORLD_LAND = topoFeature(land110, land110.objects.land)
 
-/** Pixel gap from the country well to the red ASR = 1 ring. */
-export const ASR_RING_GAP = 1
+/**
+ * Pixels from the well edge out to the red ASR = 1 ring. On the continuous
+ * log scale this is log(1 / floor) decades, not a linear 0→1 span.
+ */
+export const ASR_RING_GAP = 20
+
+/** Lowest ASR the radius can show. Below this the wash sits on the well edge.
+ *  Marshall Islands (~0.12) stays a few pixels out; log(0) is undefined. */
+export const ASR_FLOOR = 0.05
+
+/**
+ * Continuous log₁₀ radius from the well edge. Domain floor→1 maps onto
+ * `ringGap` px so the red ring is ASR 1; D3 extrapolates past 1, so 10 and
+ * 100 keep the same decade width. Built per call; `asrRadii` only reads it.
+ */
+function radiusScale(gap, floor) {
+  return scaleLog().domain([floor, 1]).range([0, gap])
+}
 
 const formatAsr = format('.2~f')
 
-/** Sage: ASR ≤ 1. Gold: ASR > 1. Exported so legends stay on the same inks.
- *  Tuned for the 0.26 disc wash on white — enough chroma to stay sage / brass. */
-export const ASR_FILL_UNDER = '#4e8b6e'
-export const ASR_FILL_OVER = '#d4a530'
+/** Spare tooltip copy — name, ASR, and which side of the ring. */
+export function asrHoverCopy({ name, asr, hideFill = false }) {
+  const asrLabel = !hideFill && Number.isFinite(asr) ? formatAsr(asr) : null
+  let status = null
+  if (asrLabel != null) {
+    status = asr > 1
+      ? 'past the fair share'
+      : asr < 1
+        ? 'within the fair share'
+        : 'exactly the fair share'
+  }
+  return { name, asrLabel, status }
+}
+
+/** HTML tooltip, positioned by the parent against its box. Matches the
+ *  scatter / ranking / map voice: paper, hairline, no chrome. */
+export function AsrTooltip({ tip }) {
+  if (!tip) return null
+  return (
+    <div
+      className="asr-tooltip"
+      style={{ left: tip.x, top: tip.y }}
+      role="status"
+    >
+      <strong>{tip.name}</strong>
+      {tip.asrLabel ? (
+        <span>
+          ASR {tip.asrLabel}
+          {tip.status ? ` · ${tip.status}` : ''}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+/** Mint: ASR ≤ 1. Gold: ASR > 1. Exported so legends stay on the same inks.
+ *  These mirror --asr-* in tokens.css — change both or the legends drift.
+ *  Bright enough to survive the 0.26 disc wash; the -INK twins carry the
+ *  legend words, which the pop fills are far too light to do. */
+export const ASR_FILL_UNDER = '#23c29a'
+export const ASR_FILL_OVER = '#ffb020'
+export const ASR_INK_UNDER = '#0d8268'
+export const ASR_INK_OVER = '#a36600'
 const FILL_UNDER = ASR_FILL_UNDER
 const FILL_OVER = ASR_FILL_OVER
-const LAND_FILL = '#12171c'
-const LAND_STROKE = '#12171c'
+const LAND_FILL = '#2c2545'
+const LAND_STROKE = '#2c2545'
 
 /**
- * Radii for the three concentric marks. The ring gap is the unit:
- * shade grows from the country outline, and ASR 1 lands on the red ring.
- * `rAsr = rInner + gap * asr` — never `rOne * asr`. Default gap is 1px.
+ * Radii for the three concentric marks, on one log₁₀ scale.
+ *
+ * From the well edge, radius is log(asr / floor) / log(1 / floor) times
+ * `ringGap`. ASR = floor sits on the well; ASR = 1 lands on the red dashed
+ * ring; everything past 1 continues on the same log — Palau at ~100 is two
+ * decades past the ring, not ninety-nine linear pixels out.
+ *
+ * The ring is a labelled mark, not a scale break. Read a disc as under or
+ * over that mark — not as a ratio of areas.
+ *
+ * `rAsr = rInner + grown` — never `rOne * asr`. D3 (`scaleLog`) produces
+ * the grown length.
  */
-export function asrRadii(size, asr, ringGap = ASR_RING_GAP) {
+export function asrRadii(size, asr, ringGap = ASR_RING_GAP, floor = ASR_FLOOR) {
   const gap = Number.isFinite(ringGap) ? ringGap : ASR_RING_GAP
+  const lo = Number.isFinite(floor) && floor > 0 ? floor : ASR_FLOOR
   const rInner = size / 2
   const rOne = rInner + gap
   const ratio = Number.isFinite(asr) ? Math.max(0, asr) : 0
-  return { rInner, rOne, rAsr: rInner + gap * ratio }
+  const grown = ratio <= lo ? 0 : radiusScale(gap, lo)(ratio)
+  return { rInner, rOne, rAsr: rInner + grown }
 }
 
 function landPathString(feature, cx, cy, rInner) {
@@ -68,8 +135,14 @@ function worldLandPath(cx, cy, rInner) {
  * Concentric ASR marks at an SVG point. D3 only produces the land `d` and
  * the radii; every mark is JSX. Used by `AsrCountry` and the Pacific map.
  *
- * The inner disc is the country well. A red dashed ring `ringGap` px out is
- * ASR = 1. The shade grows by `ringGap` px per unit of ASR.
+ * The inner disc is the country well — paper, no shade. A red dashed ring
+ * `ringGap` px out is ASR = 1, a mark on a continuous log₁₀ radius from
+ * `ASR_FLOOR`. The emission wash is a ring from the well edge. `hideFill`
+ * keeps the 1-ring and drops the wash.
+ *
+ * A transparent hit circle covers `max(rAsr, rOne)` so the well is not the
+ * only target when the wash is a thin ring. Hover itself is JSX in the
+ * parent — this only reports pointer events.
  */
 export function AsrDisc({
   cx,
@@ -83,6 +156,9 @@ export function AsrDisc({
   feature,
   clipRadius,
   hideShare = false,
+  hideFill = false,
+  onHover,
+  onLeave,
 }) {
   const reduceMotion = useReducedMotion()
   const rawId = useId()
@@ -103,16 +179,37 @@ export function AsrDisc({
     return { rInner, rOne, rAsr, d }
   }, [feat, land, size, ratio, ringGap, cx, cy])
 
+  const [hovered, setHovered] = useState(false)
   const over = ratio > 1
+  const showFill = !hideShare && !hideFill
+  const showRing = !hideShare
+  /* Stroke is centred on the path, so this radius + width lands exactly
+     on the well edge (inner) and rAsr (outer). */
+  const ringR = (geom.rInner + geom.rAsr) / 2
+  const ringW = Math.max(0, geom.rAsr - geom.rInner)
+  const hitR = hideShare ? geom.rInner : Math.max(geom.rAsr, geom.rOne)
+
+  const handleEnter = (event) => {
+    setHovered(true)
+    onHover?.(event)
+  }
+  const handleMove = (event) => {
+    onHover?.(event)
+  }
+  const handleLeave = () => {
+    setHovered(false)
+    onLeave?.()
+  }
   const shareTransition = reduceMotion
     ? { duration: 0 }
     : {
         r: { type: 'spring', visualDuration: 0.45, bounce: 0.12 },
-        fill: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+        strokeWidth: { type: 'spring', visualDuration: 0.45, bounce: 0.12 },
+        stroke: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
       }
 
   return (
-    <g className="asr-disc">
+    <g className={`asr-disc${hovered ? ' is-hovered' : ''}`}>
       <defs>
         <clipPath id={wellClipId}>
           <circle cx={cx} cy={cy} r={geom.rInner} />
@@ -131,20 +228,26 @@ export function AsrDisc({
         r={geom.rInner}
       />
 
-      {hideShare ? null : (
-        <motion.circle
-          className="asr-country__share"
-          cx={cx}
-          cy={cy}
-          initial={false}
-          animate={{
-            r: geom.rAsr,
-            fill: over ? FILL_OVER : FILL_UNDER,
-          }}
-          transition={shareTransition}
-          clipPath={clipRadius != null ? `url(#${frameClipId})` : undefined}
-        />
-      )}
+      <AnimatePresence initial={false}>
+        {showFill ? (
+          <motion.circle
+            key="share"
+            className="asr-country__share"
+            cx={cx}
+            cy={cy}
+            fill="none"
+            initial={reduceMotion ? false : { r: geom.rInner, strokeWidth: 0, stroke: FILL_UNDER }}
+            animate={{
+              r: ringR,
+              strokeWidth: ringW,
+              stroke: over ? FILL_OVER : FILL_UNDER,
+            }}
+            exit={reduceMotion ? { strokeOpacity: 0 } : { r: geom.rInner, strokeWidth: 0 }}
+            transition={shareTransition}
+            clipPath={clipRadius != null ? `url(#${frameClipId})` : undefined}
+          />
+        ) : null}
+      </AnimatePresence>
 
       {geom.d ? (
         <path
@@ -163,14 +266,24 @@ export function AsrDisc({
         r={geom.rInner}
       />
 
-      {hideShare ? null : (
+      {showRing ? (
         <circle
           className="asr-country__one"
           cx={cx}
           cy={cy}
           r={geom.rOne}
         />
-      )}
+      ) : null}
+
+      <circle
+        className="asr-disc__hit"
+        cx={cx}
+        cy={cy}
+        r={hitR}
+        onMouseEnter={handleEnter}
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+      />
     </g>
   )
 }
@@ -179,9 +292,9 @@ export function AsrDisc({
  * One country's allocated-share ratio, drawn as concentric circles.
  *
  * The inner disc is the country well (land clipped to the circle, outlined
- * by a black stroke). A red dashed ring `ringGap` px out is ASR = 1. The
- * shade starts after that well and grows by `ringGap` px per unit of ASR,
- * so 1.0 lands on the red ring.
+ * by a black stroke) — no emission colour inside it. A red dashed ring
+ * `ringGap` px out is ASR = 1, a mark on a continuous log₁₀ radius from
+ * `ASR_FLOOR`. The wash is a ring from the well edge.
  *
  * D3 only produces the land `d` string and the radii. Every mark is JSX.
  *
@@ -191,7 +304,7 @@ export function AsrDisc({
  * @param {object} [props.feature]      GeoJSON Feature; else looked up via `iso`
  * @param {string} [props.iso]          ISO 3166-1 alpha-3 or numeric
  * @param {number} [props.size=126]     inner-circle diameter, px
- * @param {number} [props.ringGap=1]    px from well edge to the ASR = 1 ring
+ * @param {number} [props.ringGap=20]   px from well edge to the ASR = 1 ring
  * @param {number} [props.frameRadius]  SVG radius; defaults to max(rAsr, rOne)
  * @param {'cell'|'shared'} [props.fit='cell']
  *   `cell` sizes/clips the frame to the disc (fair-share scene).
@@ -201,6 +314,7 @@ export function AsrDisc({
  * @param {boolean|'world'} [props.land=true]
  *   `true` looks up a country outline. `false` is a well with no land.
  *   `'world'` draws an orthographic Earth — not a fake ISO country.
+ * @param {boolean} [props.hideFill=false]  wells + ASR = 1 ring, no shade
  */
 export function AsrCountry({
   name,
@@ -213,11 +327,16 @@ export function AsrCountry({
   fit = 'cell',
   caption = true,
   land = true,
+  hideFill = false,
 }) {
+  const boxRef = useRef(null)
+  const [tip, setTip] = useState(null)
   const shared = fit === 'shared'
   const ratio = Number(asr)
   const asrLabel = Number.isFinite(ratio) ? formatAsr(ratio) : '—'
-  const title = `${name}, allocated-share ratio ${asrLabel}`
+  const showAsr = !hideFill && Number.isFinite(ratio)
+  const title = showAsr ? `${name}, allocated-share ratio ${asrLabel}` : name
+  const copy = asrHoverCopy({ name, asr: ratio, hideFill })
 
   const frame = useMemo(() => {
     const { rOne, rAsr } = asrRadii(size, ratio, ringGap)
@@ -227,8 +346,21 @@ export function AsrCountry({
     return { rFrame, svg: 2 * rFrame }
   }, [size, ratio, ringGap, frameRadius, shared])
 
+  const moveTip = (event) => {
+    const box = boxRef.current?.getBoundingClientRect()
+    if (!box) return
+    setTip({
+      ...copy,
+      x: event.clientX - box.left,
+      y: event.clientY - box.top,
+    })
+  }
+
   return (
-    <figure className={`asr-country${shared ? ' asr-country--shared' : ''}`}>
+    <figure
+      ref={boxRef}
+      className={`asr-country${shared ? ' asr-country--shared' : ''}${tip ? ' is-hovered' : ''}`}
+    >
       <svg
         className="asr-country__svg"
         width={frame.svg}
@@ -249,15 +381,22 @@ export function AsrCountry({
           name={name}
           feature={feature}
           clipRadius={shared ? undefined : frame.rFrame}
+          hideFill={hideFill}
+          onHover={moveTip}
+          onLeave={() => setTip(null)}
         />
       </svg>
 
       {caption ? (
         <figcaption className="asr-country__caption">
           <span className="asr-country__name">{name}</span>
-          <span className="asr-country__value">ASR {asrLabel}</span>
+          {showAsr ? (
+            <span className="asr-country__value">ASR {asrLabel}</span>
+          ) : null}
         </figcaption>
       ) : null}
+
+      <AsrTooltip tip={tip} />
     </figure>
   )
 }
