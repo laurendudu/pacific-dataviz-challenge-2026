@@ -42,8 +42,9 @@ for conducting AESA studies.
 - [Vite](https://vite.dev/): dev server and build, deployed to GitHub Pages via GitHub Actions
 - [Python + Jupyter](https://jupyter.org/): the data pipeline, with pandas, sdmx1 for the Pacific Data Hub, and pyaesa for the allocation maths
 
-D3 computes, React draws — the architectural rule, and the banned modules, are
-in [CLAUDE.md](CLAUDE.md).
+D3 computes, React draws: no `d3-selection`, `d3-transition`, `d3-axis`,
+`d3-zoom`, `d3-brush`, `d3-drag` or `d3-fetch` anywhere; axes are
+`scale.ticks()` mapped into JSX, and animation is React state.
 
 ## Data
 

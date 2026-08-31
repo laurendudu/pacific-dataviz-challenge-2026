@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { Scene } from '../components/scroll/Scene'
 import { AllocationPrinciples } from '../components/chart/AllocationPrinciples'
 import { ASR_FILL_OVER, ASR_FILL_UNDER } from '../components/chart/AsrCountry'
@@ -16,6 +16,17 @@ const BTN_FADE = {
   duration: 0.36,
   ease: [0.4, 0, 0.2, 1],
 }
+
+const PILL_SPRING = {
+  type: 'spring',
+  visualDuration: 0.35,
+  bounce: 0.12,
+}
+
+const SCALE_OPTIONS = [
+  { id: 'log', label: 'log₁₀' },
+  { id: 'linear', label: 'linear' },
+]
 
 /**
  * Follows the world-disc scale guide. Arrival is the Pacific with no
@@ -48,6 +59,7 @@ const ALLOC_BEATS = ALLOCATION_BEATS.hold + 1
 function AllocationView({ beat, tables, rows }) {
   const reduceMotion = useReducedMotion()
   const [picked, setPicked] = useState(null)
+  const [scale, setScale] = useState('log')
 
   const unlocked = {
     gf: beat >= ALLOCATION_BEATS.gf,
@@ -90,6 +102,7 @@ function AllocationView({ beat, tables, rows }) {
           rows={rows}
           year={YEAR}
           visual="map"
+          scale={scale}
         >
           <div className="alloc-toggles" role="group" aria-label="Allocation principles">
             <AnimatePresence initial={false}>
@@ -111,6 +124,44 @@ function AllocationView({ beat, tables, rows }) {
               ))}
             </AnimatePresence>
           </div>
+          <AnimatePresence initial={false}>
+            {unlocked.gf ? (
+              <motion.div
+                key="scale"
+                className="alloc-scale"
+                role="group"
+                aria-label="ASR radius scale"
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                transition={BTN_FADE}
+              >
+                <LayoutGroup id="alloc-scale">
+                {SCALE_OPTIONS.map((opt) => {
+                  const on = scale === opt.id
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`alloc-scale__btn${on ? ' is-active' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => setScale(opt.id)}
+                    >
+                      {on ? (
+                        <motion.span
+                          className="alloc-scale__pill"
+                          layoutId={reduceMotion ? undefined : 'alloc-scale-pill'}
+                          transition={PILL_SPRING}
+                        />
+                      ) : null}
+                      <span className="alloc-scale__label">{opt.label}</span>
+                    </button>
+                  )
+                })}
+                </LayoutGroup>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </AllocationPrinciples>
       </div>
 

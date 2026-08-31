@@ -49,6 +49,7 @@ export function AllocationPrinciples({
   rows,
   year,
   visual = 'grid',
+  scale = 'log',
   children,
 }) {
   const reduceMotion = useReducedMotion()
@@ -127,6 +128,7 @@ export function AllocationPrinciples({
           principle={principle}
           year={year}
           hideFill={hideFill}
+          scale={scale}
         />
       ) : (
         <div

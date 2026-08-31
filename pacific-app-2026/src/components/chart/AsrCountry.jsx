@@ -157,6 +157,7 @@ export function AsrDisc({
   size,
   asr,
   ringGap = ASR_RING_GAP,
+  scale = 'log',
   land = true,
   iso,
   name,
@@ -179,12 +180,12 @@ export function AsrDisc({
   const ratio = Number(asr)
 
   const geom = useMemo(() => {
-    const { rInner, rOne, rAsr } = asrRadii(size, ratio, ringGap)
+    const { rInner, rOne, rAsr } = asrRadii(size, ratio, ringGap, ASR_FLOOR, scale)
     const d = land === 'world'
       ? worldLandPath(cx, cy, rInner)
       : landPathString(feat, cx, cy, rInner)
     return { rInner, rOne, rAsr, d }
-  }, [feat, land, size, ratio, ringGap, cx, cy])
+  }, [feat, land, size, ratio, ringGap, scale, cx, cy])
 
   const [hovered, setHovered] = useState(false)
   const over = ratio > 1
@@ -276,11 +277,17 @@ export function AsrDisc({
       />
 
       {showRing ? (
-        <circle
+        <motion.circle
           className="asr-country__one"
           cx={cx}
           cy={cy}
-          r={geom.rOne}
+          initial={false}
+          animate={{ r: geom.rOne }}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { r: { type: 'spring', visualDuration: 0.45, bounce: 0.12 } }
+          }
         />
       ) : null}
 

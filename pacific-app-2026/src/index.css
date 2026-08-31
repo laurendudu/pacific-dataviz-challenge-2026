@@ -992,6 +992,57 @@ svg { display: block; }
   min-width: 0;
   pointer-events: auto;
 }
+.alloc-scale {
+  position: relative;
+  z-index: 8;
+  display: inline-flex;
+  align-items: stretch;
+  align-self: flex-start;
+  margin: 0 0 10px;
+  padding: 0.18em;
+  border: 1px solid var(--hairline);
+  border-radius: 980px;
+  background: var(--paper);
+  pointer-events: auto;
+}
+.alloc-scale__btn {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0.32em 0.95em;
+  border: 0;
+  border-radius: 980px;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--step--1);
+  letter-spacing: -0.01em;
+  color: var(--ink-secondary);
+  line-height: 1.3;
+}
+.alloc-scale__btn:hover,
+.alloc-scale__btn:focus-visible {
+  color: var(--ink);
+}
+.alloc-scale__btn:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+.alloc-scale__btn.is-active {
+  color: var(--paper);
+}
+.alloc-scale__pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 980px;
+  background: var(--ink);
+}
+.alloc-scale__label {
+  position: relative;
+  z-index: 1;
+}
 .alloc-toggles__btn,
 .scatter__control {
   position: relative;
@@ -1282,9 +1333,10 @@ svg { display: block; }
 /* ── Allocation map (Pacific ASR discs) ─────────────────────────────────── */
 .alloc-map {
   position: relative;
-  width: 100%;
+  width: 85%;
   height: 100%;
   min-height: 0;
+  justify-self: center;
   overflow: hidden;
 }
 .alloc-map__svg {
@@ -1325,12 +1377,19 @@ svg { display: block; }
   pointer-events: none;
   cursor: pointer;
 }
-.alloc-map .asr-country__well,
+.alloc-map .asr-country__well {
+  fill: var(--paper);
+  fill-opacity: 0.42;
+}
 .alloc-pacific .asr-country__well {
   fill: none;
 }
+.alloc-map .asr-country__share {
+  stroke-opacity: 0.32;
+}
 .alloc-map__place.is-missing .asr-country__well {
-  fill: none;
+  fill: var(--paper);
+  fill-opacity: 0.42;
 }
 .alloc-map__label {
   fill: var(--ink);

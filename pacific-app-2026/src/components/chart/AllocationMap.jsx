@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { geoCentroid, geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
 import { feature as topoFeature } from 'topojson-client'
 import land110 from 'world-atlas/land-110m.json'
@@ -7,10 +7,12 @@ import { findCountryFeature } from '../../data/asr'
 import { AsrDisc, AsrTooltip, asrHoverCopy, asrRadii } from './AsrCountry'
 import { useChartDimensions } from './useChartDimensions'
 
-/** Well diameter, px. The red ASR = 1 ring sits `RING_GAP` out from this. */
+/** Well diameter, px. The red ASR = 1 ring sits `ringGap` out from this. */
 const SIZE = 28
 /** Pixel gap from the well edge to the ASR = 1 ring on the continuous log. */
 export const MAP_ASR_RING_GAP = 20
+/** Linear: 1 ASR unit = 5 px past the well, so ASR 1 is 5 px out. */
+export const MAP_ASR_LINEAR_GAP = 5
 
 const WORLD_LAND = topoFeature(land110, land110.objects.land)
 const NO_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -27,7 +29,12 @@ function wrapPlaceName(name) {
   return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')]
 }
 
-function placeMarks(projection, values, loaded) {
+function ringGapFor(scale) {
+  return scale === 'linear' ? MAP_ASR_LINEAR_GAP : MAP_ASR_RING_GAP
+}
+
+function placeMarks(projection, values, loaded, scale) {
+  const ringGap = ringGapFor(scale)
   const marks = []
   for (const place of PACIFIC_TERRITORIES) {
     const feat = findCountryFeature(place.iso) ?? findCountryFeature(place.name)
@@ -37,7 +44,13 @@ function placeMarks(projection, values, loaded) {
     const raw = values?.get(place.iso)
     const asr = raw == null ? undefined : Number(raw)
     const missing = loaded && !Number.isFinite(asr)
-    const { rInner, rOne, rAsr } = asrRadii(SIZE, missing ? 0 : asr, MAP_ASR_RING_GAP)
+    const { rInner, rOne, rAsr } = asrRadii(
+      SIZE,
+      missing ? 0 : asr,
+      ringGap,
+      undefined,
+      scale,
+    )
     marks.push({
       iso: place.iso,
       name: place.name,
@@ -75,15 +88,23 @@ function placeLabels(marks) {
 /**
  * Pacific-centred map. D3 only projects; every mark is JSX.
  * Each territory is the same ASR disc as the grid: an empty well (stroke
- * only, no country land), shade, and a red dashed ring at ASR = 1.
- * `hideFill` keeps the ring and drops the shade.
+ * and a translucent core so the map shows through), shade, and a red dashed
+ * ring at ASR = 1. `hideFill` keeps the ring and drops the shade.
+ * `scale` is `log` (default) or `linear`; every disc shares that mapping.
  */
-export function AllocationMap({ values, loaded, principle, year, hideFill = false }) {
+export function AllocationMap({
+  values,
+  loaded,
+  principle,
+  year,
+  hideFill = false,
+  scale = 'log',
+}) {
   const [ref, dms] = useChartDimensions(NO_MARGIN)
   const [tip, setTip] = useState(null)
-  const wellMaskId = `alloc-wells-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   const width = dms.width
   const height = dms.height
+  const ringGap = ringGapFor(scale)
 
   const geom = useMemo(() => {
     if (!width || !height) return null
@@ -100,7 +121,7 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
         { type: 'FeatureCollection', features: islands },
       )
     const path = geoPath(projection)
-    const marks = placeLabels(placeMarks(projection, values, loaded))
+    const marks = placeLabels(placeMarks(projection, values, loaded, scale))
       .map((m) => ({ ...m, d: m.feat ? path(m.feat) : null }))
     const stacked = [...marks].sort((a, b) => b.rAsr - a.rAsr)
 
@@ -110,7 +131,7 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
       marks,
       stacked,
     }
-  }, [width, height, values, loaded])
+  }, [width, height, values, loaded, scale])
 
   const moveTip = (event, mark) => {
     const box = ref.current?.getBoundingClientRect()
@@ -138,41 +159,25 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
           aria-label={title}
         >
           <title>{title}</title>
-          <defs>
-            <mask id={wellMaskId} maskUnits="userSpaceOnUse">
-              <rect x={0} y={0} width={width} height={height} fill="white" />
-              {geom.marks.map((m) => (
-                <circle
-                  key={m.iso}
-                  cx={m.x}
-                  cy={m.y}
-                  r={m.rInner}
-                  fill="black"
-                />
-              ))}
-            </mask>
-          </defs>
-          <g mask={`url(#${wellMaskId})`}>
-            {geom.graticuleD ? (
+          {geom.graticuleD ? (
+            <path
+              className="alloc-map__graticule"
+              d={geom.graticuleD}
+              fill="none"
+            />
+          ) : null}
+          {geom.landD ? (
+            <path className="alloc-map__land" d={geom.landD} />
+          ) : null}
+          {geom.marks.map((m) => (
+            m.d ? (
               <path
-                className="alloc-map__graticule"
-                d={geom.graticuleD}
-                fill="none"
+                key={`land-${m.iso}`}
+                className="alloc-map__island"
+                d={m.d}
               />
-            ) : null}
-            {geom.landD ? (
-              <path className="alloc-map__land" d={geom.landD} />
-            ) : null}
-            {geom.marks.map((m) => (
-              m.d ? (
-                <path
-                  key={`land-${m.iso}`}
-                  className="alloc-map__island"
-                  d={m.d}
-                />
-              ) : null
-            ))}
-          </g>
+            ) : null
+          ))}
 
           <g className="alloc-map__zones">
             {geom.stacked.map((m) => {
@@ -190,7 +195,8 @@ export function AllocationMap({ values, loaded, principle, year, hideFill = fals
                     cy={m.y}
                     size={SIZE}
                     asr={m.missing ? 0 : m.asr}
-                    ringGap={MAP_ASR_RING_GAP}
+                    ringGap={ringGap}
+                    scale={scale}
                     land={false}
                     iso={m.iso}
                     name={m.name}
