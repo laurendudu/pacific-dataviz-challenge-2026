@@ -19,50 +19,105 @@ const LINKEDIN_URL = `https://www.linkedin.com/sharing/share-offsite/?url=${enco
 
 const PYAESA_URL = 'https://github.com/AESAtoolkit/pyaesa'
 
+/** A Pacific Data Hub .Stat Explorer link for one SPC dataflow. */
+const pdh = (id) =>
+  `https://stats.pacificdata.org/vis?lc=en&df[ds]=ds:SPC2&df[id]=${id}&df[ag]=SPC`
+
 /**
- * Every source that reaches the published piece, and what it carries.
- * Mirrors the ✅ rows of the README's "Data sources" tables.
+ * Every dataset that reaches the published piece, linked to the dataset
+ * itself rather than its platform's home page. Mirrors the ✅ rows of the
+ * README's "Data sources" tables. An item may carry several links when the
+ * "dataset" is really a set of sibling series (the World Bank rents).
  */
-const DATA_SOURCES = [
+const DATA_GROUPS = [
   {
-    name: 'Pacific Data Hub .Stat Explorer (SPC)',
-    url: 'https://stats.pacificdata.org/',
-    use: 'every Pacific series — GHG emissions per capita, disaster losses, energy, tourism, population, waste and marine protection, including all of Palau’s profile',
+    title: 'Pacific Data Hub — SPC .Stat (SDMX)',
+    items: [
+      {
+        links: [{ label: 'Climate Change indicators (DF_CLIMATE_CHANGE)', url: pdh('DF_CLIMATE_CHANGE') }],
+        use: 'GHG emissions per capita for the Pacific islands — the Pacific end of the fair-share maths',
+      },
+      {
+        links: [{ label: 'SDG Goal 11 (DF_SDG_11)', url: pdh('DF_SDG_11') }],
+        use: 'disaster loss as a share of GDP (SDG 11.5.2) for 12 Pacific islands',
+      },
+      {
+        links: [{ label: 'Energy indicators (DF_ENERGY)', url: pdh('DF_ENERGY') }],
+        use: 'installed capacity, electricity generated, fuel imports and primary energy — Palau’s outlier family',
+      },
+      {
+        links: [{ label: 'Tourist arrivals (DF_TOURISM_ARRIVALS)', url: pdh('DF_TOURISM_ARRIVALS') }],
+        use: 'visitor arrivals — Palau’s 5.3 visitors per resident, the ruled-out hypothesis',
+      },
+      {
+        links: [{ label: 'Population projections (DF_POP_PROJ)', url: pdh('DF_POP_PROJ') }],
+        use: 'mid-year population estimates, the denominator of every per-resident figure',
+      },
+      {
+        links: [{ label: 'Solid waste (DF_WASTE)', url: pdh('DF_WASTE') }],
+        use: 'municipal solid waste per person per day',
+      },
+      {
+        links: [{ label: 'Fisheries NMDI (DF_NMDI_FIS)', url: pdh('DF_NMDI_FIS') }],
+        use: 'marine area protected as a share of territorial waters — Palau’s counterpoint',
+      },
+      {
+        links: [{ label: 'World Development Indicators for the Pacific (DF_WBWDI)', url: pdh('DF_WBWDI') }],
+        use: 'energy intensity and forest cover — World Bank WDI republished by SPC for consistent Pacific coverage',
+      },
+    ],
   },
   {
-    name: 'Our World in Data — CO₂ and greenhouse gas emissions',
-    url: 'https://github.com/owid/co2-data',
-    use: 'total GHG emissions for every non-Pacific country (wrapping EDGAR and the Global Carbon Project) — the world side of the ranking and the overshoot maths',
+    title: 'Read directly',
+    items: [
+      {
+        links: [{ label: 'Our World in Data — CO₂ and greenhouse gas emissions', url: 'https://github.com/owid/co2-data' }],
+        use: 'total GHG emissions for every non-Pacific country (wrapping EDGAR and the Global Carbon Project)',
+      },
+      {
+        links: [{ label: 'ND-GAIN Country Index (University of Notre Dame)', url: 'https://gain.nd.edu/our-work/country-index/download-data/' }],
+        use: 'climate exposure for 192 countries — the scatter’s headline x axis',
+      },
+      {
+        links: [{ label: 'UN SDG Global Database, indicator 11.5.2', url: 'https://unstats.un.org/sdgs/dataportal' }],
+        use: 'direct economic loss from disasters as a share of GDP (Sendai Framework), 149 countries',
+      },
+      {
+        prefix: 'World Bank fossil-fuel rents: ',
+        links: [
+          { label: 'oil', url: 'https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS' },
+          { label: 'coal', url: 'https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS' },
+          { label: 'gas', url: 'https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS' },
+        ],
+        use: 'rents as a share of GDP, summed — who was paid for the overshoot',
+      },
+    ],
   },
   {
-    name: 'ND-GAIN Country Index (University of Notre Dame)',
-    url: 'https://gain.nd.edu/our-work/country-index/',
-    use: 'climate exposure for 192 countries — the scatter’s headline x axis',
+    title: 'Via pyaesa',
+    items: [
+      {
+        links: [{ label: 'World Bank World Development Indicators', url: 'https://databank.worldbank.org/source/world-development-indicators' }],
+        use: 'population and GDP (PPP) for every country — the denominators of the fair-share rules',
+      },
+      {
+        links: [{ label: 'Bjørn & Hauschild (2015)', url: 'https://doi.org/10.1007/s11367-015-0899-2' }],
+        use: 'the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr — the budget every fair-share rule divides',
+      },
+    ],
   },
   {
-    name: 'UN SDG Global Database',
-    url: 'https://unstats.un.org/sdgs/dataportal',
-    use: 'direct economic loss from disasters as a share of GDP (SDG 11.5.2, Sendai Framework) — the second scatter axis',
-  },
-  {
-    name: 'World Bank Indicators API',
-    url: 'https://data.worldbank.org/',
-    use: 'oil, coal and gas rents as a share of GDP — who was paid for the overshoot — plus the population and GDP behind the fair-share rules',
-  },
-  {
-    name: 'Bjørn & Hauschild (2015)',
-    url: 'https://doi.org/10.1007/s11367-015-0899-2',
-    use: 'the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr — the budget every fair-share rule divides',
-  },
-  {
-    name: 'world-atlas / Natural Earth',
-    url: 'https://github.com/topojson/world-atlas',
-    use: 'country outlines for the map and the globe (public domain)',
-  },
-  {
-    name: 'NASA Visible Earth',
-    url: 'https://visibleearth.nasa.gov/',
-    use: 'the Blue Marble colour and topography textures on the globe (public domain)',
+    title: 'Map and globe assets',
+    items: [
+      {
+        links: [{ label: 'world-atlas 110m TopoJSON', url: 'https://github.com/topojson/world-atlas' }],
+        use: 'country outlines, derived from Natural Earth (public domain)',
+      },
+      {
+        links: [{ label: 'NASA Blue Marble / Visible Earth', url: 'https://visibleearth.nasa.gov/' }],
+        use: 'the colour and topography textures on the globe (public domain)',
+      },
+    ],
   },
 ]
 
@@ -160,16 +215,31 @@ export function ColophonScene() {
           <div>
             <dt>Data</dt>
             <dd>
-              <ul className="colophon__sources">
-                {DATA_SOURCES.map((s) => (
-                  <li key={s.name}>
-                    <a href={s.url} target="_blank" rel="noopener noreferrer">
-                      {s.name}
-                    </a>{' '}
-                    — {s.use}
-                  </li>
-                ))}
-              </ul>
+              {DATA_GROUPS.map((group) => (
+                <div className="colophon__sourcegroup" key={group.title}>
+                  <p className="colophon__sourcegroup-title">{group.title}</p>
+                  <ul className="colophon__sources">
+                    {group.items.map((item) => (
+                      <li key={item.links[0].url}>
+                        {item.prefix}
+                        {item.links.map((link, i) => (
+                          <span key={link.url}>
+                            {i > 0 && ' · '}
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {link.label}
+                            </a>
+                          </span>
+                        ))}{' '}
+                        — {item.use}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </dd>
           </div>
           <div>

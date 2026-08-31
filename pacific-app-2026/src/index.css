@@ -3028,6 +3028,16 @@ svg { display: block; }
 }
 .colophon__sources li::marker { color: var(--ink-muted); }
 
+.colophon__sourcegroup + .colophon__sourcegroup { margin-top: 0.9em; }
+.colophon__sourcegroup-title {
+  margin: 0 0 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--step--2, 0.74rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
 .colophon__actions {
   display: flex;
   flex-wrap: wrap;
