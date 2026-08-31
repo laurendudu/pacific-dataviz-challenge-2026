@@ -75,13 +75,17 @@ function ScatterView({ beat }) {
   const [pinnedIso, setPinnedIso] = useState(null)
   const [previewIso, setPreviewIso] = useState(null)
   const [picked, setPicked] = useState(null)
-  const { countries, year, sources, loading, error } = useScatterCountries()
+  const { countries } = useScatterCountries()
 
   const allUnlocked = beat >= X_VARS.length
   const scrolledId = X_VARS[Math.min(beat, X_VARS.length - 1)].id
 
   useEffect(() => {
-    if (!allUnlocked) setPicked(null)
+    if (!allUnlocked) {
+      setPicked(null)
+      setPinnedIso(null)
+      setPreviewIso(null)
+    }
   }, [allUnlocked])
 
   const xVarId = allUnlocked && picked ? picked : scrolledId
@@ -134,16 +138,6 @@ function ScatterView({ beat }) {
           and terriories that are more vulnerable to climate change, emit less, and have less capacity to act. 
           Through a egalitarian or prioritarian approaches, the responsability of reducing GHG emissions is more fairly distributed.
         </p>
-        <div className="scatter__tools">
-          <RankSearch
-            enabled={countries.length > 0}
-            items={searchItems}
-            pinnedIso={pinnedIso}
-            onPick={setPinnedIso}
-            onPreview={setPreviewIso}
-            reduceMotion={reduceMotion}
-          />
-        </div>
       </div>
 
       <div className="scatter__controls" role="group" aria-label="Horizontal axis">
@@ -170,6 +164,25 @@ function ScatterView({ beat }) {
               </motion.button>
             )
           })}
+          {allUnlocked && countries.length > 0 ? (
+            <motion.div
+              key="country-search"
+              className="scatter__search"
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              transition={FADE}
+            >
+              <RankSearch
+                enabled
+                items={searchItems}
+                pinnedIso={pinnedIso}
+                onPick={setPinnedIso}
+                onPreview={setPreviewIso}
+                reduceMotion={reduceMotion}
+              />
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
 
@@ -198,18 +211,6 @@ function ScatterView({ beat }) {
       </div>
 
       <div className="scatter__legend">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.p
-            key={xVar.id}
-            className="scatter__legend-lead"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
-            transition={FADE}
-          >
-            {xVar.lede}
-          </motion.p>
-        </AnimatePresence>
         <ul className="scatter__legend-keys">
           <li>
             <span className="scatter__legend-swatch scatter__legend-swatch--pacific" aria-hidden="true" />
@@ -224,17 +225,6 @@ function ScatterView({ beat }) {
             Rest of the world
           </li>
         </ul>
-        <p className="scatter__source">
-          {loading ? 'Loading…' : null}
-          {error ? 'Country panel unavailable.' : null}
-          {!loading && !error && year ? (
-            <>
-              ASR {year}, on a log axis; dashed lines mark ASR = 1 and, where a
-              rule reaches it, ASR = 100.{' '}
-              {xVar.note} {sources[xVarId] ? `${sources[xVarId]}.` : null}
-            </>
-          ) : null}
-        </p>
       </div>
 
       <AnimatePresence>

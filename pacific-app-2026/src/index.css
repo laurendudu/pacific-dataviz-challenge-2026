@@ -1753,28 +1753,28 @@ svg { display: block; }
   text-align: center;
   max-width: min(46rem, 100%);
 }
-.scatter__tools {
+.scatter__controls {
   position: relative;
   z-index: 8;
   display: flex;
   justify-content: center;
-  margin-top: 0.15rem;
-  pointer-events: auto;
-}
-.scatter__tools .rank-search {
-  margin-top: 0;
   align-items: center;
-}
-.scatter__controls {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.85rem;
   padding-inline: var(--scene-pad-x);
   flex: 0 0 auto;
+}
+.scatter__search {
+  flex: 0 0 auto;
+}
+.scatter__controls .rank-search {
+  margin-top: 0;
+  align-self: center;
+  align-items: center;
+}
+.scatter__controls .rank-search__btn {
+  white-space: nowrap;
 }
 .scatter__body {
   position: relative;
@@ -1911,12 +1911,9 @@ svg { display: block; }
   position: relative;
   z-index: 3;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1.5rem;
+  justify-content: flex-start;
   margin: 0.7rem 0 0;
   padding-inline: var(--scene-pad-x);
-  max-width: min(72ch, 100%);
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: var(--step--1);
@@ -1924,13 +1921,10 @@ svg { display: block; }
   color: var(--ink-secondary);
   pointer-events: none;
 }
-.scatter__legend-lead {
-  margin: 0;
-  flex: 1 1 28ch;
-}
 .scatter__legend-keys {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 0.35rem 1.15rem;
   margin: 0;
   padding: 0;
@@ -1960,11 +1954,6 @@ svg { display: block; }
 .scatter__legend-swatch--world {
   background: color-mix(in srgb, var(--world) 22%, transparent);
   border-color: color-mix(in srgb, var(--ink) 18%, transparent);
-}
-.scatter__source {
-  margin: 0;
-  flex: 1 1 100%;
-  color: var(--ink-muted);
 }
 .scatter__tooltip {
   position: absolute;
@@ -2719,6 +2708,8 @@ svg { display: block; }
   box-sizing: border-box;
 }
 .palau__head {
+  position: relative;
+  z-index: 8;
   flex: 0 0 auto;
   padding-inline: var(--scene-pad-x);
   display: flex;
@@ -2726,6 +2717,16 @@ svg { display: block; }
   align-items: center;
   gap: 0.25rem;
   text-align: center;
+}
+.palau__search {
+  margin-top: 0.35rem;
+}
+.palau__search .rank-search {
+  margin-top: 0;
+  align-items: center;
+}
+.palau__search .rank-search__btn {
+  white-space: nowrap;
 }
 .palau__eyebrow {
   margin: 0;

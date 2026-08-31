@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useReducedMotion } from 'motion/react'
 import { HypothesisRow } from '../components/chart/HypothesisRow'
+import { RankSearch } from '../components/chart/RankSearch'
 import { Scene } from '../components/scroll/Scene'
 import { usePalauContext } from '../data/palau'
 
@@ -14,22 +16,53 @@ import { usePalauContext } from '../data/palau'
  * Rows arrive with scroll and stay, so the case is whole by the end.
  */
 export function PalauScene() {
+  const [hover, setHover] = useState(null)
+  const [pinnedIso, setPinnedIso] = useState(null)
+  const [previewIso, setPreviewIso] = useState(null)
+
   return (
     <Scene id="palau" pages={5} smooth={1}>
-      {(progress) => <Lineup progress={progress} />}
+      {(progress) => (
+        <Lineup
+          progress={progress}
+          hover={hover}
+          onHover={setHover}
+          pinnedIso={pinnedIso}
+          onPin={setPinnedIso}
+          previewIso={previewIso}
+          onPreview={setPreviewIso}
+        />
+      )}
     </Scene>
   )
 }
 
-function Lineup({ progress }) {
+function Lineup({
+  progress,
+  hover,
+  onHover,
+  pinnedIso,
+  onPin,
+  previewIso,
+  onPreview,
+}) {
   const { headline, rows, loading, error } = usePalauContext()
-  const [hover, setHover] = useState(null)
+  const reduceMotion = useReducedMotion()
 
   /* Rows reveal across the first three-quarters of the scene; the closing
      paragraph waits until the last one has landed. */
   const shownCount = rows.length
     ? Math.round(clamp((progress - 0.05) / 0.62, 0, 1) * rows.length)
     : 0
+
+  /* Union of islands actually drawn — Pacific-only, same set as the strips. */
+  const searchItems = useMemo(() => islandsFromRows(rows), [rows])
+  const pictByIso = useMemo(
+    () => new Map(searchItems.map((d) => [d.iso, d.pict])),
+    [searchItems],
+  )
+  const searchPict = pictByIso.get(previewIso ?? pinnedIso) ?? null
+  const highlightedPict = hover?.pict ?? searchPict
 
   return (
     <div className="palau">
@@ -52,6 +85,18 @@ function Lineup({ progress }) {
           <span className="palau__key palau__key--subject" aria-hidden="true" />
           Palau
         </p>
+        {rows.length > 0 ? (
+          <div className="palau__search">
+            <RankSearch
+              enabled
+              items={searchItems}
+              pinnedIso={pinnedIso}
+              onPick={onPin}
+              onPreview={onPreview}
+              reduceMotion={reduceMotion}
+            />
+          </div>
+        ) : null}
       </header>
 
       {error ? <p className="palau__status">Palau context unavailable.</p> : null}
@@ -74,8 +119,8 @@ function Lineup({ progress }) {
                   indicator={row.indicator}
                   format={format}
                   showEnds={i === 0}
-                  hovered={hover?.pict ?? null}
-                  onHover={setHover}
+                  hovered={highlightedPict}
+                  onHover={onHover}
                 />
               ) : null}
               <p className="hyp__unit">
@@ -94,7 +139,12 @@ function Lineup({ progress }) {
         ))}
       </ol>
 
-      {hover ? <Tooltip hover={hover} /> : null}
+      {hover ? (
+        <Tooltip
+          hover={hover}
+          pinned={Boolean(pinnedIso) && hover.pict === pictByIso.get(pinnedIso)}
+        />
+      ) : null}
       <footer className="palau__close">
         <p>
           Sources: Pacific Data Hub .Stat — <code>DF_CLIMATE_CHANGE</code>,{' '}
@@ -113,7 +163,7 @@ function Lineup({ progress }) {
  * reader checks the claim instead of taking it: follow Fiji down the list and
  * watch it stay in the middle.
  */
-function Tooltip({ hover }) {
+function Tooltip({ hover, pinned }) {
   /* Positioned against the viewport, not the scene: the pointer coordinates
      already are viewport coordinates, and measuring the container would mean
      reading a ref while rendering. */
@@ -126,6 +176,7 @@ function Tooltip({ hover }) {
       <strong>{hover.name}</strong>
       <span>
         {format(hover.value)} {hover.unit}
+        {pinned ? ' · pinned' : ''}
       </span>
       <span className="palau__tooltip-rank">
         {ordinal(hover.rank)} of {hover.n} · {hover.label.toLowerCase()} ·{' '}
@@ -133,6 +184,17 @@ function Tooltip({ hover }) {
       </span>
     </div>
   )
+}
+
+function islandsFromRows(rows) {
+  const byIso = new Map()
+  for (const row of rows) {
+    for (const d of row.indicator.values) {
+      if (!d.iso_code || byIso.has(d.iso_code)) continue
+      byIso.set(d.iso_code, { iso: d.iso_code, name: d.name, pict: d.pict })
+    }
+  }
+  return [...byIso.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))

@@ -7,12 +7,13 @@ import { ChartFrame } from './ChartFrame'
 import { layoutAlluvial, layoutSpine, packedCutoffY, MIN_H, NODE_W } from './alluvialLayout'
 
 const MARGIN = { top: 52, right: 200, bottom: 20, left: 136 }
-const COMPACT_MARGIN = { top: 56, right: 88, bottom: 16, left: 100 }
+const COMPACT_MARGIN = { top: 56, right: 112, bottom: 16, left: 100 }
 const HIT_R = 36
 const LABEL_GAP = 14
 const CUTOFF_LABEL_GAP = 18
 const GREY_BATCHES = 4
 const CUTOFF_TICK = 28
+const CUTOFF_TEXT_GAP = 5
 const CUTOFF_DASH = '10 8'
 const CUTOFF_DASH_HI = '8 6'
 
@@ -175,13 +176,26 @@ function RankingMarks({
     if (cutoff100Y != null) {
       notes.push({ id: 'asr-100', label: 'ASR = 100', py: cutoff100Y, hi: true })
     }
-    const getPy = volume
-      ? (row) => fat.byIso[lastCol]?.get(row.iso)?.yc ?? null
-      : (row) => {
-          const rank = row.ranks[lastCol] ?? lastRank(row.ranks)
-          return rank == null ? null : y(rank)
+    /* A country a rule cannot score (no PPP GDP under prioritarian) anchors
+       its label to the last column it actually appears in — never to a
+       column where it has no mark. */
+    const countries = labelled
+      .map((row) => {
+        let col = null
+        for (let c = lastCol; c >= 0; c -= 1) {
+          const has = volume ? fat.byIso[c]?.get(row.iso) : row.ranks[c] != null
+          if (has) {
+            col = c
+            break
+          }
         }
-    return placeAllLabels(labelled, notes, getPy, height)
+        if (col == null) return null
+        const py = volume ? fat.byIso[col].get(row.iso).yc : y(row.ranks[col])
+        if (!Number.isFinite(py)) return null
+        return { kind: 'country', row, col, py, placed: py }
+      })
+      .filter(Boolean)
+    return placeAllLabels(countries, notes, height, lastCol)
   }, [labelled, lastCol, y, height, livePr, volume, fat.byIso, cutoffYs, cutoff100Y])
 
   const hits = useMemo(() => {
@@ -462,11 +476,13 @@ function RankingMarks({
         transition={colTransition}
       >
         {labels.map((item) => {
-          const px = x[lastCol]
+          const px = x[item.col ?? lastCol]
           const py = item.py
           const ly = item.placed
           const lead = Math.abs(ly - py) > 6
-          const tx = px + (lead ? 24 : volume ? NODE_W / 2 + 8 : 12)
+          const tickStart = px + (volume ? NODE_W / 2 : 0)
+          const tickEnd = tickStart + CUTOFF_TICK
+          const tx = tickEnd + CUTOFF_TEXT_GAP
           if (item.kind === 'cutoff') {
             return (
               <g
@@ -476,7 +492,7 @@ function RankingMarks({
                 {lead ? (
                   <path
                     className="rank__leader rank__leader--cutoff"
-                    d={`M${px + (volume ? NODE_W / 2 + 4 : 6)},${py} C${px + 14},${py} ${px + 14},${ly} ${px + 20},${ly}`}
+                    d={`M${tickEnd},${py} C${tickEnd + 4},${py} ${tickEnd + 4},${ly} ${tx - 2},${ly}`}
                   />
                 ) : null}
                 <text x={tx} y={ly} dy="0.32em" textAnchor="start">
@@ -487,7 +503,7 @@ function RankingMarks({
           }
           const row = item.row
           const faded = dim && hoveredIso !== row.iso
-          const rankMark = formatRank(labelRank(row, lastLive))
+          const rankMark = formatRank(row.ranks[item.col])
           return (
             <g
               key={`lbl-${row.iso}`}
@@ -496,7 +512,7 @@ function RankingMarks({
               {lead ? (
                 <path
                   className="rank__leader"
-                  d={`M${px + (volume ? NODE_W / 2 + 4 : 6)},${py} C${px + 14},${py} ${px + 14},${ly} ${px + 20},${ly}`}
+                  d={`M${tickStart + 4},${py} C${tickStart + 14},${py} ${tickStart + 14},${ly} ${tx - 2},${ly}`}
                 />
               ) : null}
               <text x={tx} y={ly} dy="0.32em" textAnchor="start">
@@ -552,10 +568,12 @@ function RankingMarks({
             y={cutoff100Y}
             height={height}
             kind="hi"
+            outset={volume ? NODE_W / 2 : 0}
           />
         </motion.g>
         {columns.map((col, i) => {
-          const on = i === 0 ? 1 : i === 1 ? revealEg : revealPr
+          if (i === 0) return null
+          const on = i === 1 ? revealEg : revealPr
           return (
             <motion.g
               key={`cut-${col.id}`}
@@ -568,6 +586,7 @@ function RankingMarks({
                 y={cutoffYs[i]}
                 height={height}
                 kind="one"
+                outset={volume ? NODE_W / 2 : 0}
               />
             </motion.g>
           )
@@ -616,15 +635,18 @@ function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }
   )
 }
 
-function CutoffMark({ x, y: py, height, kind = 'one', tick = CUTOFF_TICK }) {
+/** Short dashed tick to the right of a column spine — never a span
+ *  between columns. `outset` clears a volume node. */
+function CutoffMark({ x, y: py, height, kind = 'one', tick = CUTOFF_TICK, outset = 0 }) {
   if (py == null) return null
   const yLine = Math.max(0.75, Math.min(height - 1.5, py))
   const hi = kind === 'hi'
+  const x1 = x + outset
   return (
     <g className={`rank__cutoff${hi ? ' rank__cutoff--hi' : ''}`}>
       <line
-        x1={x - tick}
-        x2={x + tick}
+        x1={x1}
+        x2={x1 + tick}
         y1={yLine}
         y2={yLine}
         strokeLinecap="butt"
@@ -700,7 +722,7 @@ function tiedColumn(items) {
   return -1
 }
 
-function placeAllLabels(labelled, notes, getPy, height) {
+function placeAllLabels(countries, notes, height, lastCol) {
   const locked = packY(
     notes
       .filter((n) => n.py != null && Number.isFinite(n.py))
@@ -709,25 +731,26 @@ function placeAllLabels(labelled, notes, getPy, height) {
         id: n.id,
         label: n.label,
         hi: n.hi,
+        col: lastCol,
         py: n.py,
         placed: Math.max(0, Math.min(height, n.py)),
       })),
     height,
     CUTOFF_LABEL_GAP,
   )
-  const countries = labelled
-    .map((row) => {
-      const py = getPy(row)
-      if (py == null || !Number.isFinite(py)) return null
-      return { kind: 'country', row, py, placed: py }
-    })
-    .filter(Boolean)
-  const packed = dodgeBlockers(
-    countries,
-    locked.map((n) => n.placed),
-    height,
-    LABEL_GAP,
-  )
+  /* Labels only collide within their own column, so dodge per column; the
+     cutoff labels sit on the last column and block only that group. */
+  const byCol = new Map()
+  for (const item of countries) {
+    const group = byCol.get(item.col) ?? []
+    group.push(item)
+    byCol.set(item.col, group)
+  }
+  const packed = []
+  for (const [col, items] of byCol) {
+    const blockers = col === lastCol ? locked.map((n) => n.placed) : []
+    packed.push(...dodgeBlockers(items, blockers, height, LABEL_GAP))
+  }
   return [...locked, ...packed]
 }
 
@@ -789,20 +812,6 @@ function dodgeBlockers(items, blockers, height, gap) {
     item.placed = Math.max(0, Math.min(height, item.placed))
   }
   return sorted
-}
-
-function lastRank(ranks) {
-  for (let i = ranks.length - 1; i >= 0; i -= 1) {
-    if (ranks[i] != null) return ranks[i]
-  }
-  return null
-}
-
-function labelRank(row, lastLive) {
-  for (let i = lastLive; i >= 0; i -= 1) {
-    if (row.ranks[i] != null) return row.ranks[i]
-  }
-  return lastRank(row.ranks)
 }
 
 export function formatRank(rank) {

@@ -64,7 +64,7 @@ export const PRINCIPLES = [
     table: 'eg',
     missing: null,
     definition:
-      'Your slice is your population over the world’s, so every person on earth holds an identical claim — 0.85 tonnes a year.',
+      'The budget is allocated per person, so every country gets the same amount for each of its citizens.',
   },
   {
     id: 'pr',
@@ -77,6 +77,6 @@ export const PRINCIPLES = [
     table: 'pr',
     missing: 'New Caledonia and French Polynesia have no comparable PPP GDP, so they have no ratio under this rule.',
     definition:
-      'Population weighted down by GDP per capita, so the poorer the country the larger its claim on the same world budget.',
+      'Population weighted down by GDP per capita, so the poorer the country the larger its allocated share is.',
   },
 ]

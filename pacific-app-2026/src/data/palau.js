@@ -29,7 +29,7 @@ export const CONTEXT_URL = `${BASE}data/palau_context.json`
 export const HYPOTHESES = [
   {
     id: 'visitors_per_capita',
-    claim: 'Is it the visitors?',
+    claim: 'Is it tourism?',
     measure: 'Tourists arriving each year, for every one person who lives there.',
     verdict: 'ruled-out',
     reading: '',
@@ -37,28 +37,28 @@ export const HYPOTHESES = [
   {
     id: 'waste_per_capita',
     claim: 'Is it the waste?',
-    measure: 'Rubbish thrown out, per person, per day.',
+    measure: 'Generated waste, per person, per day.',
     verdict: 'partial',
-    reading: 'Third of 21, and behind two US territories. Real, but not what separates Palau from its neighbours.',
+    reading: '',
   },
   {
     id: 'electricity_per_capita',
     claim: 'Is it the grid?',
-    measure: 'Electricity generated per person over a year. Palau makes almost all of it from diesel.',
+    measure: 'Electricity generated per person over a year.',
     verdict: 'holds',
     reading: '',
   },
   {
     id: 'capacity_per_capita',
     claim: 'Is it built oversized?',
-    measure: 'How much power station has been built per person — the size of the plant, not what it produces.',
+    measure: 'Size of power plants per person.',
     verdict: 'holds',
     reading: '',
   },
   {
     id: 'energy_per_capita',
-    claim: 'Is it everything, not just power?',
-    measure: 'All the energy each person uses — fuel for boats and vehicles included, not just electricity.',
+    claim: 'Is it energy consumption?',
+    measure: 'Energy consumption per person.',
     verdict: 'holds',
     reading: '',
   },
