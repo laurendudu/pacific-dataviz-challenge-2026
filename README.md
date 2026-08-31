@@ -37,16 +37,10 @@ them:
 | `PR(GDPcap)` — prioritarian | poorer countries get more | `(population ÷ GDP per capita)`, normalised |
 | `AR(E)` — grandfathering | you keep what you already had | `emissions in the base year / world emissions that year` |
 
-Under any fair rule the answer is the same. The 14 Pacific countries produce
-**0.053%** of world emissions — 4.6 hours of the world's output for a whole
-year — and the median Pacific island sits almost exactly at an ASR of 1, while
-the United States sits near 20. Grandfathering is the exception, and
-revealingly so: it hands every country the identical ratio and can no longer
-tell the Marshall Islands apart from Saudi Arabia (see method notes).
 
 ---
 
-## What's in the piece
+## What's in the dataviz
 
 Eight scrolling scenes, in `pacific-app-2026/src/scenes/`.
 
