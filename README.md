@@ -2,186 +2,356 @@
 
 Pacific island nations emit almost nothing per person, and are among the first
 to lose land, water and harvests to the warming those emissions cause. This
-repo builds the data behind a scrollytelling piece about that gap.
+repo holds the data pipeline and the scrollytelling piece that tell that story.
 
-The measure is the **Absolute Sustainability Ratio**:
+**Live site:** https://laurendudu.github.io/pacific-dataviz-challenge-2026/
 
-    ASR = emissions / allocated carrying capacity
+---
 
-A country's allocated carrying capacity is its fair share of a **steady-state
-climate carrying capacity** — a fixed annual level of greenhouse-gas emissions
-that could be sustained indefinitely. An ASR of 3 means a country emits three
-times what it is entitled to; an ASR of 0.1 means a tenth.
+## What this project does
 
-| bound | GtCO₂eq/yr | what it is | per person, 2023 |
-|---|---|---|---|
-| `min_cc` | **6.81** | the **2 °C** steady-state budget, Bjørn & Hauschild (2015) | **0.847 t** |
-| `max_cc` | 8.72 | 128% of `min_cc` | 1.084 t |
+1. **Collects** national greenhouse-gas emissions, population, GDP, climate
+   exposure, disaster losses and energy data — all open, with Pacific figures
+   coming from SPC's Pacific Data Hub.
+2. **Computes** each country's **Absolute Sustainability Ratio (ASR)**:
 
-`min_cc` is the headline. Against it the world emits **6.4×** what it may.
+   ```
+   ASR = emissions / allocated carrying capacity
+   ```
 
-**Say "2 °C steady-state carrying capacity" — not "planetary boundary", not
-"1.5 °C", not "carbon budget".** The 6.81 figure is the 2 °C value, stated in
-de Bantel et al., *UNCASExt* (arXiv:2606.21465) Fig. 2. The shipped CSV's
-comment mentions "450 ppm / 350 ppm"; that is only where the 128% ratio for
-`max_cc` comes from (450/350 = 1.286), not a claim that `min_cc` is the
-350 ppm boundary level.
+   The allocated carrying capacity is a country's fair share of a fixed annual
+   level of emissions the climate could sustain indefinitely. An ASR of 3 means
+   a country emits three times what it is entitled to; 0.1 means a tenth.
 
-The strict planetary-boundary value is tighter (~1.06 °C) and is **not** in
-pyaesa's `gwp100` table — the PB framework defines climate through *state*
-variables (ppm CO₂, W/m² energy imbalance), which pyaesa keeps separately in
-`pb_lcia_cc_steady_state.csv` and cannot use as a kg CO₂-eq/yr flow. Using it
-means lifting the number from Bjørn & Hauschild (2015) Appendix C and
-overriding `min_cc` by hand.
+3. **Publishes** small JSON tables in `data_viz/`, which a React + D3
+   scrollytelling app in `pacific-app-2026/` reads and animates.
 
-Three allocation rules are computed, and the piece compares them:
+The budget is the **2 °C steady-state carrying capacity** of Bjørn & Hauschild
+(2015): **6.81 GtCO₂-eq/yr**, or **0.847 t per person** in 2023. In 2023 the
+world emitted **43.26 Gt** — **6.4×** what it may.
+
+Splitting that budget between countries is a moral choice, not a technical
+step, so the piece computes three rules and lets the reader switch between
+them:
 
 | Method | Rule | Share of the budget |
 |---|---|---|
 | `EG(Pop)` — egalitarian | everyone gets the same | `population / world population` |
 | `PR(GDPcap)` — prioritarian | poorer countries get more | `(population ÷ GDP per capita)`, normalised |
-| `AR(E)` — grandfathering | you keep what you already had | `emissions in 2000 / world emissions in 2000` |
+| `AR(E)` — grandfathering | you keep what you already had | `emissions in the base year / world emissions that year` |
 
-Under the egalitarian rule the per-person entitlement is identical for every
-country — 0.847 t CO₂-eq in 2023 — because population cancels out. Under the
-prioritarian rule each country gets its own, inversely to GDP per capita.
+Under any fair rule the answer is the same. The 14 Pacific countries produce
+**0.053%** of world emissions — 4.6 hours of the world's output for a whole
+year — and most sit at or below an ASR of 1, while the United States sits near
+20. Grandfathering is the exception, and revealingly so: it hands every country
+the identical ratio and can no longer tell the Marshall Islands apart from
+Saudi Arabia. Its base year is `GF_BASE_YEAR` in `config.py`, currently 2023,
+the end of the window.
 
-**Grandfathering is computed outside pyaesa.** pyaesa carries the rule as
-`AR(E)` (acquired rights) but refuses to run it at `source="iso3"`, which is
-gated to `EG(Pop)` and `PR(GDPcap)`: its other six L1 methods resolve shares
-from LCIA-weighted MRIO impacts, which a country-level emissions table does not
-carry. The equation needs nothing but emissions, so notebook 03 applies it
-directly — `share(c) = E(c, 2000) / ΣE(2000)` — against the same budget pool
-the other two rules divide (pyaesa's own allocated carrying capacity summed
-back over the 198 countries, 99.8% of the global figure).
+---
 
-The reference year is load-bearing. Set it to the current year and the rule
-collapses — the numerator cancels and every country lands on the same ratio.
-That degeneracy is the argument against grandfathering, but it does not draw,
-so the window start is used. **Read the grandfathering numbers as divergence
-since 2000, not as a level:** every country starts on an identical 4.33 by
-construction and moves off it only by growing faster or slower than the world.
-It inverts the ranking — in 2023 the UK (2.2) and Denmark (2.5) sit at the
-bottom while Laos (55), Mongolia (38) and Afghanistan (26) top it.
+## What's in the piece
 
-**Static, not dynamic.** The dynamic AR6 pathway is built for prospective
-studies: it front-loads the allowance and places the reductions after this
-window, so measured against it the world sits at 1.17× its 2023 budget and
-reads as near-compliant. Static gives 6.4×. For a historical snapshot the
-static value is the meaningful one, and it is the planetary boundary this
-project is named after. Going static also removes four choices the dynamic
-path forced with no principled way to settle them — the IAM, the SSP, the
-climate pathway, and which of C1's twelve scenarios to report. Under dynamic
-those must be propagated with `uncertainty_asr` (Monte Carlo), not settled by
-picking one representative.
+Eight scrolling scenes, in `pacific-app-2026/src/scenes/`.
 
-## Pipeline
-
-Run the notebooks in order. Each writes what the next one reads.
-
-| Notebook | Does | Writes |
+| Scene | Shows | Reads |
 |---|---|---|
-| `01_setup.ipynb` | Downloads World Bank and IPCC AR6 reference data | `data_raw/`, `data_processed/`, `asr/` |
-| `02_emissions.ipynb` | Fetches and merges national GHG emissions | `asr/A_lca/…`, `data_viz/emissions.csv`, `data_viz/countries.csv` |
-| `03_asr.ipynb` | Computes the ASR | `data_viz/asr.json`, `asr_gdp.json`, `asr_gf.json`, `asr.csv`, `variables.csv` |
-| `04_contributions.ipynb` | Each country's share of 2023 world emissions, and the Pacific bloc's | `data_viz/contributions.json`, `contributions.csv` |
-| `05_tourism.ipynb` | Tourist arrivals per resident for every Pacific island, and the 2019 world ranking | `data_viz/tourism.csv`, `tourism.json` |
-| `06_energy.ipynb` | Oil-fired share of electricity and electricity per resident, Pacific against the world | `data_viz/energy.csv`, `energy.json` |
-| `07_exposure.ipynb` | Joins ND-GAIN climate exposure and World Bank GDP per capita onto the ASR panel | `data_viz/scatter.json` |
+| `GlobeScene` | WebGL Earth, the nine planetary boundaries, seven of them crossed, closing on climate | `planetaryBoundaries.js`, `contributions.json` |
+| `SwarmScene` | The 6.81 Gt annual budget against what the world actually emits, as a swarm of dots; the Pacific's 0.053% | `contributions.json`, `ghgBudget2023.js` |
+| `AsrVizScene` | How to read an ASR disc — log₁₀ radius, dashed ring at ASR 1, mint inside a fair share, gold over | `ghgBudget2023.js` |
+| `AllocationScene` | The three allocation rules on a Pacific map, entitlements in megatonnes, switchable | `asr.json`, `asr_gdp.json`, `asr_gf.json`, `contributions.json` |
+| `RankingScene` | "Who's best in class?" — the Pacific and the world ranked under each rule, with search | the three ASR tables, `contributions.json` |
+| `ScatterScene` | Pacific vs world, ASR against six switchable x axes: exposure, disaster loss, emissions share, fossil rents, GDP per capita, ND-GAIN vulnerability | `scatter.json` |
+| `PalauScene` | Palau, the world's biggest overshooter: six hypotheses tested against its Pacific neighbours | `palau_context.json` |
+| `ColophonScene` | Sources and method | — |
 
-Notebook 01 downloads ~210 MB of AR6 scenarios and takes a while. Notebook 02 is
-quick; notebook 03 runs the full allocation chain and takes roughly 20 minutes;
-notebook 04 only re-reads what 02 wrote and runs in seconds; notebooks 05 and
-06 are independent of the ASR chain and run in seconds; notebook 07 downloads
-4.7 MB and runs in seconds. All seven are safe to re-run.
+**The app reads exactly six tables:** `asr.json`, `asr_gdp.json`, `asr_gf.json`,
+`contributions.json`, `scatter.json`, `palau_context.json`. `public/data` is a
+symlink to `data_viz/`, and those six must stay un-ignored in `.gitignore` or
+the Pages build fails its own bundle check.
 
-If pyaesa refuses to start because the country set changed, clear the computed
-phases and keep notebook 02's output:
-`mkdir -p asr/_stale && mv asr/B1_asocc/iso3 asr/B2_acc asr/C_asr asr/_stale/`
+`data_viz/tourism.json` and `data_viz/energy.json` are computed by notebooks 05
+and 06 but **are not read by the app** — they were built for a scene that did
+not make the final cut. The Pacific tourism figure that *is* in the piece
+(Palau's 5.3 visitors per resident) comes from `palau_context.json`.
 
-**Keep `figures=False` in notebook 03.** pyaesa would otherwise render about
-two thousand PNGs that nothing here reads. (Under `dynamic_ar6` it is far
-worse — 14,568 files, five-plus hours, and then a crash in pyaesa's own
-plotting code, `KeyError: ''` in `render_asr_figures`, *after* the results are
-written but *before* the export cells run.)
+---
 
-Shared settings — paths, the year window, the Pacific country list — live in
-`config.py`. `pdh_api.py` wraps the Pacific Data Hub's SDMX API.
+## The pipeline
+
+Install the Python dependencies, then run the notebooks in order from the repo
+root. Each writes what the next reads.
+
+```bash
+pip install pyaesa pandas numpy requests sdmx1 pycountry jupyter
+```
+
+| Notebook | Does | Writes | In the piece |
+|---|---|---|---|
+| `01_setup.ipynb` | Downloads World Bank and IPCC AR6 reference data via pyaesa | `data_raw/`, `data_processed/`, `asr/` | — |
+| `02_emissions.ipynb` | Fetches and merges national GHG emissions (SPC + OWID) | `asr/A_lca/…`, `data_viz/emissions.csv`, `countries.csv` | feeds 03 |
+| `03_asr.ipynb` | Computes the ASR under all three allocation rules | `asr.json`, `asr_gdp.json`, `asr_gf.json`, `asr.csv`, `variables.csv` | ✅ |
+| `04_contributions.ipynb` | Each country's share of 2023 world emissions, and the Pacific bloc's | `contributions.json`, `contributions.csv` | ✅ |
+| `05_tourism.ipynb` | Tourist arrivals per resident for every Pacific island, and the 2019 world ranking | `tourism.csv`, `tourism.json` | ❌ not read |
+| `06_energy.ipynb` | Oil-fired share of electricity and electricity per resident, Pacific against the world | `energy.csv`, `energy.json` | ❌ not read |
+| `07_exposure.ipynb` | Joins six candidate x axes onto the ASR panel | `scatter.json` | ✅ |
+| `08_palau_context.ipynb` | Which indicators make Palau an outlier among Pacific islands, scored by robust z | `palau_context.json` | ✅ |
+
+Timing: notebook 01 downloads ~210 MB and is slow; 03 runs the full allocation
+chain and takes ~20 minutes; 07 takes about a minute; the rest run in seconds.
+All eight are safe to re-run.
+
+Shared settings — paths, the year window (2000–2023), the Pacific country list,
+and the reasoning behind every methodological choice — live in `config.py`.
+`pdh_api.py` wraps the Pacific Data Hub's SDMX API.
+
+Then the app:
+
+```bash
+cd pacific-app-2026 && npm install && npm run dev
+```
+
+---
+
+## About pyaesa
+
+[**pyaesa**](https://github.com/AESAtoolkit/pyaesa)
+([PyPI](https://pypi.org/project/pyaesa/)) is a Python package for *absolute
+environmental sustainability assessment* — the field that asks not "is this
+better than last year" but "is this inside what the planet can take". It does
+three jobs here:
+
+- **downloads and tidies reference data** — World Bank population and GDP, IPCC
+  AR6 scenarios (`download_pop_gdp`, `download_ar6`, `process_pop_gdp`,
+  `process_ar6`);
+- **ships the carrying-capacity table** — the steady-state annual budget per
+  impact category (`data_raw/carrying_capacities/gwp100_lcia_cc_steady_state.csv`);
+- **runs the allocation chain** — `deterministic_asr(...)` splits the global
+  budget between countries under the egalitarian and prioritarian rules and
+  divides emissions by the result.
+
+**All of this could have been done by hand.** The maths is arithmetic: one
+global budget, a share per country, a division. pyaesa is a **helper**, not a
+black box — it saves writing the download-and-reshape code, keeps the
+allocation formulas consistent with the published AESA literature, and gives
+every intermediate phase (aSoCC → aCC → ASR) a named file on disk that can be
+opened and checked. No result here depends on it having been used.
+
+Two illustrations of that:
+
+- **Grandfathering is computed outside pyaesa.** The package carries the rule as
+  `AR(E)` but refuses to run it at `source="iso3"`, which is gated to `EG(Pop)`
+  and `PR(GDPcap)`. The equation needs nothing but emissions, so notebook 03
+  applies it directly — `share(c) = E(c, base) / ΣE(base)` — against the same
+  budget pool the other two rules divide.
+- **The budget is a single number.** 6.81 GtCO₂-eq/yr, read from a CSV. Nothing
+  stops you dividing it by population in a spreadsheet.
+
+Version used: pyaesa 1.2.4 (GPL-3.0).
+
+---
 
 ## Data sources
 
-All open data.
+All open data, as the competition requires. ✅ marks a source that reaches the
+published piece; ⬚ marks one computed in the repo but not shown.
 
-- **[SPC Pacific Data Hub](https://stats.pacificdata.org/)** — GHG emissions per
-  capita for Pacific islands, plus tourist arrivals, electricity generation by
-  source, and mid-year population estimates for all 22 PICTs, via SDMX
-- **[Our World in Data](https://github.com/owid/co2-data)** — GHG emissions for
-  every other country, wrapping EDGAR and the Global Carbon Project
-- **IPCC AR6 scenario database** and **World Bank** population and GDP (PPP,
-  constant 2017 USD) — downloaded by [pyaesa](https://pypi.org/project/pyaesa/),
-  which also computes the budget allocation and the ratio
-- **[World Bank `ST.INT.ARVL`](https://data.worldbank.org/indicator/ST.INT.ARVL)**
-  — international tourist arrivals for the rest of the world, read straight from
-  the World Bank API and used only for the 2019 ranking in notebook 05
-- **[ND-GAIN Country Index](https://gain.nd.edu/our-work/country-index/download-data/)**
-  (University of Notre Dame, open Creative Commons) — the climate **exposure**
-  score on the scatter's x axis, 192 countries at 2023. Chosen over INFORM Risk
-  and the WorldRiskIndex because those score absolute humanitarian impact and so
-  weight by population: both rank Tuvalu among the world's *safest* countries,
-  which would draw the Pacific the wrong way round. Exposure rather than
-  ND-GAIN's headline vulnerability score because the composite folds in
-  sensitivity and adaptive capacity, which are development indicators — it
-  correlates -0.83 with log GDP per capita against exposure's -0.50, so a chart
-  built on it plots poverty and calls it climate. On exposure Tuvalu ranks 2nd
-  of 192 behind the Maldives, and six Pacific islands sit in the global top 20
-- **[OWID energy dataset](https://github.com/owid/energy-data)** and the World
-  Bank's `EG.ELC.FOSL.ZS` / `EG.FEC.RNEW.ZS` — electricity mix and renewable
-  share for the rest of the world in notebook 06. The World Bank's fossil share
-  agrees with SPC's generation data to 0.03 points at the median across 330
-  island-years, which is what lets the two sit in one ranking
+### Pacific Data Hub — SPC .Stat (SDMX)
 
-Both sources are read as **all greenhouse gases in CO₂-eq excluding land use**
-(OWID's `total_ghg_excluding_lucf`) — every Kyoto gas, not CO₂ alone, which is
-what `gwp100_lcia` requires. Excluding land use is forced by the Pacific data:
-the Pacific Data Hub reports on that basis, putting Papua New Guinea at 10.4 Mt
-for 2023 against OWID's 43.9 Mt with land use and 11.4 Mt without. Matching
-OWID to it keeps one basis across all countries.
+Browse the catalogue at **https://stats.pacificdata.org/**. Every dataflow below
+is read over SDMX with `sdmx1` through `pdh_api.py`; each ID links to its
+machine-readable definition at
+`https://stats.pacificdata.org/rest/dataflow/SPC/<ID>`.
 
-Note this was originally justified by the AR6 budget's `include_afolu=False`.
-That argument no longer applies under a static carrying capacity, which is not
-built from an AFOLU setting. The choice stands on Pacific data availability
-alone, and it is a real limitation — see the caveats.
+| | Dataflow | Indicator(s) | What for | Notebook |
+|---|---|---|---|---|
+| ✅ | [`DF_CLIMATE_CHANGE`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_CLIMATE_CHANGE) | `GHG_EMI_CAPITA` | GHG emissions per capita for the PICTs — the Pacific end of the ASR numerator | 02, 08 |
+| ✅ | [`DF_SDG_11`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_SDG_11) | `VC_DSR_LSGP` | Disaster loss as a share of GDP (SDG 11.5.2) for 12 PICTs, cross-checked row by row against the UN copy | 07 |
+| ✅ | [`DF_ENERGY`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_ENERGY) | `ENERGY_IND_006/007/011/015` | Installed capacity, electricity generated, fuel imports, primary energy — Palau's outlier family | 08 |
+| ✅ | [`DF_TOURISM_ARRIVALS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_ARRIVALS) | `TOUR` | Tourist arrivals — Palau's 5.3 visitors per resident, the ruled-out hypothesis | 05, 08 |
+| ✅ | [`DF_POP_PROJ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_PROJ) | `MIDYEARPOPEST` | Mid-year population estimates, the denominator of every per-resident figure | 05, 06, 08 |
+| ✅ | [`DF_WASTE`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_WASTE) | `SOLIDWASTEPC` | Municipal solid waste per person per day | 08 |
+| ✅ | [`DF_NMDI_FIS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_NMDI_FIS) | `ER_MRN_MARIN` | Marine area protected, % of territorial waters — Palau's counterpoint | 08 |
+| ✅ | [`DF_WBWDI`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_WBWDI) | `EG_EGY_PRIM_PP_KD`, `AG_LND_FRST_ZS` | Energy intensity and forest cover. **World Bank WDI republished by SPC**, not an SPC measurement — used because it covers the Pacific consistently | 08 |
+| ⬚ | [`DF_POWER_GEN`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POWER_GEN) | generation by source | Oil-fired share of electricity for the Pacific | 06 |
+| ⬚ | [`DF_SDG`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_SDG) | `EG_FEC_RNEW` | Renewable share of final energy consumption | 06 |
+| ⬚ | [`DF_OVERSEAS_VISITORS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_OVERSEAS_VISITORS) | `TOU`, `_T` (`NOSVA`) | Visitor arrivals by purpose, air and sea — adds cruise excursionists | 05 |
+| ⬚ | [`DF_TOURISM_EARNINGS`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_TOURISM_EARNINGS) | — | Scanned for the Palau search; **no Palau rows exist at all**, so it is a documented gap rather than a source | 08 |
 
-Pacific figures come from the Pacific Data Hub rather than OWID wherever both
-have a country.
+Considered and not used: [`DF_POP_LECZ`](https://stats.pacificdata.org/rest/dataflow/SPC/DF_POP_LECZ)
+(share of population in the low-elevation coastal zone) — the closest SPC series
+to a climate-exposure index, but Pacific-only, so it cannot carry a world x axis.
+
+### Other open data, read directly
+
+| | Source | What | Notebook |
+|---|---|---|---|
+| ✅ | [Our World in Data — CO₂ and GHG](https://github.com/owid/co2-data) | `total_ghg_excluding_lucf` for every non-Pacific country; wraps EDGAR and the Global Carbon Project | 02 |
+| ✅ | [ND-GAIN Country Index 2026](https://gain.nd.edu/our-work/country-index/download-data/) (University of Notre Dame, CC-licensed) | Climate **exposure**, 192 countries — the scatter's headline x axis. The **vulnerability** composite ships too, as the counter-example the scene argues against | 07 |
+| ✅ | [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal) ([API](https://unstats.un.org/sdgapi/swagger/)), indicator 11.5.2, series `VC_DSR_LSGP` | Direct economic loss from disasters as % of GDP, Sendai Framework, 149 countries | 07 |
+| ✅ | World Bank [`NY.GDP.PETR.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.PETR.RT.ZS), [`NY.GDP.COAL.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.COAL.RT.ZS), [`NY.GDP.NGAS.RT.ZS`](https://data.worldbank.org/indicator/NY.GDP.NGAS.RT.ZS) | Oil, coal and gas rents as % of GDP, summed, mean 2015–2021 — who was *paid* for the overshoot | 07 |
+| ⬚ | [Our World in Data — Energy](https://github.com/owid/energy-data) | Electricity mix for the rest of the world | 06 |
+| ⬚ | [World Bank `ST.INT.ARVL`](https://data.worldbank.org/indicator/ST.INT.ARVL) | International tourist arrivals, for the 2019 world ranking | 05 |
+| ⬚ | [World Bank `EG.ELC.FOSL.ZS`](https://data.worldbank.org/indicator/EG.ELC.FOSL.ZS) | Fossil share of electricity — agrees with SPC generation data to 0.03 points at the median across 330 island-years | 06 |
+| ⬚ | [World Bank `EG.FEC.RNEW.ZS`](https://data.worldbank.org/indicator/EG.FEC.RNEW.ZS) | Renewable share of final energy, rest of world | 06 |
+
+All World Bank indicators are pulled from the public
+[Indicators API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)
+at `https://api.worldbank.org/v2/`.
+
+### Via pyaesa
+
+pyaesa downloads and processes these; the notebooks never touch their servers.
+
+| | Source | What it provides here |
+|---|---|---|
+| ✅ | [World Bank World Development Indicators](https://databank.worldbank.org/source/world-development-indicators) | Population and GDP (PPP, constant 2017 USD) for every country — the denominators of the egalitarian and prioritarian rules, and the GDP-per-capita x axis in notebook 07 |
+| ✅ | Bjørn, A., & Hauschild, M. Z. (2015), [10.1007/s11367-015-0899-2](https://doi.org/10.1007/s11367-015-0899-2) | The 2 °C steady-state climate carrying capacity, 6.81 GtCO₂-eq/yr, shipped by pyaesa as a CSV. Identified as the 2 °C figure in de Bantel et al., *UNCASExt* ([arXiv:2606.21465](https://arxiv.org/abs/2606.21465)), Fig. 2 |
+| ✅ | [UNCASExt / PyUNCASE](https://setac.confex.com/setac/europe2026/meetingapp.cgi/Paper/32699) (de Bantel et al.; Pirson et al.) | The allocation-method definitions the `EG(Pop)` / `PR(GDPcap)` / `AR(E)` formulas follow |
+| ⬚ | [IPCC AR6 Scenarios Database](https://data.ece.iiasa.ac.at/ar6/) (IIASA, [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911)) | Downloaded in notebook 01 for the *dynamic* budget option. **Not used in the published results** — this project runs the static budget, see method notes |
+| ⬚ | [PRIMAP-hist](https://doi.org/10.5194/essd-8-571-2016) and the [Global Carbon Budget](https://globalcarbonbudget.org/the-latest-gcb-data/) | Historical baselines pyaesa harmonises AR6 pathways against, in that same download step |
+
+pyaesa can also pull EXIOBASE 3 and OECD ICIO multi-regional input-output tables
+for consumption-based accounting. **This project does not use them** — it is
+territorial (production-based, `fu_code="L1.b"`). Full citation list:
+`data_raw/methodological_notes/recommended_citations.txt`.
+
+### Map and globe assets
+
+| Asset | Source |
+|---|---|
+| Country outlines, 110m TopoJSON | [`world-atlas`](https://github.com/topojson/world-atlas), derived from [Natural Earth](https://www.naturalearthdata.com/) (public domain) |
+| Earth colour and topography textures | NASA imagery, Blue Marble / [Visible Earth](https://visibleearth.nasa.gov/) (public domain) |
+
+---
+
+## Tech stack
+
+**Data pipeline — Python, Jupyter**
+
+| Tool | Role |
+|---|---|
+| [pyaesa](https://pypi.org/project/pyaesa/) 1.2.4 | Reference-data download, carrying capacities, budget allocation, ASR |
+| [pandas](https://pandas.pydata.org/) · [NumPy](https://numpy.org/) | All tabular work |
+| [sdmx1](https://pypi.org/project/sdmx1/) | SDMX client for the Pacific Data Hub |
+| [requests](https://requests.readthedocs.io/) | World Bank, UN SDG and ND-GAIN downloads |
+| [pycountry](https://pypi.org/project/pycountry/) | ISO 3166 code and name resolution |
+| [Jupyter](https://jupyter.org/) | The eight numbered notebooks |
+
+**App — `pacific-app-2026/`**
+
+| Tool | Role |
+|---|---|
+| [React](https://react.dev/) 19 | All rendering |
+| [Vite](https://vite.dev/) 8 | Dev server and build |
+| [D3](https://d3js.org/) 7 | **Maths only** — scales, shapes, projections, force layout, interpolation, formatting |
+| [Motion](https://motion.dev/) | Scroll-driven and enter/exit animation |
+| [react-globe.gl](https://github.com/vasturiano/react-globe.gl) + [three.js](https://threejs.org/) | The photoreal opening globe (WebGL) |
+| [topojson-client](https://github.com/topojson/topojson-client) + [world-atlas](https://github.com/topojson/world-atlas) | Country geometry for the maps |
+| [oxlint](https://oxc.rs/) | Linting |
+
+**Architecture rule — D3 computes, React draws.** No `d3-selection`,
+`d3-transition`, `d3-axis`, `d3-zoom`, `d3-brush`, `d3-drag` or `d3-fetch`
+anywhere; axes are `scale.ticks()` mapped into JSX, animation is React state.
+See `CLAUDE.md`.
+
+**Delivery**
+
+| Tool | Role |
+|---|---|
+| [GitHub Actions](https://github.com/features/actions) | Build on push to `main`, with a check that every table the app fetches made it into `dist/` |
+| [GitHub Pages](https://pages.github.com/) | Hosting |
+
+---
+
+## Method notes
+
+The short version of the choices that shape the numbers. `config.py` carries
+the long version, in comments next to the constants they govern.
+
+- **Say "2 °C steady-state carrying capacity"** — not "planetary boundary", not
+  "1.5 °C", not "carbon budget". The strict planetary-boundary value is tighter
+  (~1.06 °C) and is defined by *state* variables (ppm CO₂, W/m²), which cannot
+  be used as a kg CO₂-eq/yr flow.
+- **Static, not dynamic.** The dynamic AR6 pathway front-loads the allowance and
+  puts the reductions after this window, so the world reads as near-compliant at
+  1.17×. Static gives 6.4×, which is the meaningful figure for a historical
+  snapshot, and it avoids four unsettleable choices (IAM, SSP, climate pathway,
+  which of C1's twelve scenarios).
+- **All Kyoto gases, CO₂-eq, excluding land use.** Forced by the Pacific data:
+  the Pacific Data Hub reports on that basis, putting Papua New Guinea at
+  10.4 Mt for 2023 against OWID's 43.9 Mt with land use and 11.4 Mt without.
+  Matching OWID to it keeps one basis across all countries.
+- **Territorial (production-based) accounting**, `fu_code="L1.b"`, keyed on
+  `r_p`. No consumption-based figures exist for any Pacific island — OWID's
+  `consumption_co2` covers 0 of the 14.
+- **Grandfathering is shown at its collapse point.** With the base year set to
+  the displayed year, each country's own emissions cancel out of the ratio and
+  all 198 land on the same value — 6.3621 in 2023, the world's own ASR. That
+  flat result *is* the argument: the rule declares everyone equally in overshoot
+  while handing the US 2.6 t/person of entitlement and the Marshall Islands
+  16 kg. Set `GF_BASE_YEAR = min(YEARS)` for the other reading, where the spread
+  is each country's emissions growth relative to the world's.
+- **Exposure, not vulnerability.** ND-GAIN's headline composite folds in
+  sensitivity and adaptive capacity, which are development indicators: it
+  correlates −0.83 with log GDP per capita against exposure's −0.50, so a chart
+  built on it plots poverty and calls it climate. INFORM Risk and the
+  WorldRiskIndex are worse for this story — they score absolute humanitarian
+  impact, so they weight by population and both rank Tuvalu among the world's
+  *safest* countries. On exposure Tuvalu ranks 2nd of 192, behind the Maldives,
+  and six Pacific islands sit in the global top 20.
+- **Pacific figures come from the Pacific Data Hub**, not OWID, wherever both
+  have a country.
 
 ## Caveats
 
-- **Territorial accounting.** Emissions are counted where they happen, divided
-  by who lives there. Palau and New Caledonia come out very high as a result —
-  Palau hosted 5.3 visitors per resident in 2019 (notebook 05), New Caledonia
-  smelts nickel. Both figures are correct and both need context.
-- **Coverage.** 198 countries. American Samoa, Guam and the Northern Mariana
-  Islands have Pacific Data Hub emissions but no World Bank population entry,
-  so no budget can be allocated to them. Bermuda, Greenland, San Marino,
-  Monaco, Curacao, Sint Maarten, Eswatini and Palestine have no
-  land-use-free OWID series in this window and are dropped rather than
-  guessed at.
-- **No land-use emissions.** Deforestation and land-use change are outside
-  both the numerator and the budget, so the piece cannot make a deforestation
-  argument. On this basis Brazil is the 9th largest emitter rather than the
-  4th, and the DR Congo 67th rather than 11th.
-- **Accounting boundary.** Production-based (territorial), `fu_code="L1.b"`,
-  keyed on `r_p`. Both sources report territorial emissions, so consumption-based
-  framing (`L1.a`) would misdescribe the data. No consumption-based figures exist
-  for any Pacific island — OWID's `consumption_co2` covers 0 of the 14.
-- **Uncertainty is the min/max bracket.** `data_viz/asr.csv` carries both
-  `min_cc` and `max_cc` for all three allocation rules. `asr.json`,
-  `asr_gdp.json` and `asr_gf.json` report `min_cc`.
-- **The prioritarian view covers fewer countries than the egalitarian one.** New Caledonia and
-  French Polynesia have no internationally comparable PPP GDP — they are French
-  collectivities and do not take part in the International Comparison Program,
-  so the World Bank, SPC `DF_WBWDI` and HRMI all lack it. SPC publishes only
-  nominal GDP, which is not substitutable: the PPP/nominal ratio is 2.05× for
-  Fiji but 1.33× for Tonga, so mixing bases would bias the Pacific by an unknown
-  amount in the direction that flatters the argument.
+- **Territorial accounting cuts both ways.** Emissions are counted where they
+  happen, divided by who lives there. Palau (ASR 97) and New Caledonia (21,
+  nickel smelting) come out very high. Both figures are correct and both need
+  context — which is what notebook 08 and the Palau scene provide.
+- **Coverage: 198 countries.** American Samoa, Guam and the Northern Mariana
+  Islands have Pacific Data Hub emissions but no World Bank population entry, so
+  no budget can be allocated to them. Bermuda, Greenland, San Marino, Monaco,
+  Curaçao, Sint Maarten, Eswatini and Palestine have no land-use-free OWID
+  series in this window and are dropped rather than guessed at.
+- **No land-use emissions**, so the piece cannot make a deforestation argument.
+  On this basis Brazil is the 9th largest emitter rather than the 4th, and the
+  DR Congo 67th rather than 11th.
+- **The prioritarian view covers fewer countries.** New Caledonia and French
+  Polynesia have no internationally comparable PPP GDP — they are French
+  collectivities outside the International Comparison Program. SPC publishes
+  only nominal GDP, which is not substitutable: the PPP/nominal ratio is 2.05×
+  for Fiji but 1.33× for Tonga.
+- **Disaster loss is a floor, not a measurement.** SDG 11.5.2 reporting is
+  voluntary; about fifty countries in the panel have never filed, and filers
+  undercount — Vanuatu's largest reported year is 0.41% of GDP over a period
+  that includes Cyclone Pam.
+- **Uncertainty is a min/max bracket.** The carrying capacity is a range:
+  `min_cc` = 6.81 GtCO₂-eq/yr (the headline) and `max_cc` = 8.72, which is 128%
+  of it. `data_viz/asr.csv` carries both for all three rules; the JSON files the
+  app reads report `min_cc`.
+- **SPC carries some series forward.** The Marshall Islands and Nauru are
+  reported at a flat 0.1 t per person every year, so a new year there is likely
+  carried forward rather than freshly measured.
+
+## Troubleshooting
+
+**A table 404s on the live site.** `pacific-app-2026/public/data` is a symlink
+to `data_viz/`, which `.gitignore` ignores except for an explicit allow-list. A
+new table the app fetches must be un-ignored there or it never gets committed,
+and the Pages build fails its own bundle check. The six the app reads are
+`asr.json`, `asr_gdp.json`, `asr_gf.json`, `contributions.json`, `scatter.json`,
+`palau_context.json`.
+
+**pyaesa refuses to start because the country set changed.** Clear the computed
+phases and keep notebook 02's output:
+
+```bash
+mkdir -p asr/_stale && mv asr/B1_asocc/iso3 asr/B2_acc asr/C_asr asr/_stale/
+```
+
+**Keep `figures=False` in notebook 03.** pyaesa would otherwise render about two
+thousand PNGs that nothing here reads. (Under `dynamic_ar6` it is far worse:
+14,568 files, five-plus hours, and then a `KeyError: ''` inside pyaesa's own
+`render_asr_figures` — *after* the results are written but *before* the export
+cells run.)
