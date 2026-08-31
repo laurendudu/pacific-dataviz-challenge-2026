@@ -6,6 +6,7 @@ import {
   subscribeOpeningGate,
   getOpeningGate,
 } from '../../scenes/GlobeScene'
+import { SWARM_ASR_BEAT, SWARM_BEAT_COUNT } from '../../scenes/SwarmScene'
 
 /**
  * Charts that already have a real page on the site. Add a row when a new
@@ -20,16 +21,22 @@ export const CHARTS = [
   {
     id: 'budget',
     label: 'Global GHG emissions and budget',
-    target: { type: 'hash', id: 'budget' },
+    /* Beat 0 is the two swarms; later beats are the ASR item below. */
+    target: { type: 'hash', id: 'budget', beat: 0 },
   },
   {
     id: 'global-asr',
     label: 'Introducing Absolute Sustainability Ratios',
-    target: { type: 'hash', id: 'budget', progress: 0.76 },
+    target: { type: 'hash', id: 'budget', beat: SWARM_BEAT_COUNT - 1 },
+  },
+  {
+    id: 'asr-viz',
+    label: 'Visualizing Absolute Sustainability Ratios',
+    target: { type: 'hash', id: 'asr-viz' },
   },
   {
     id: 'allocation',
-    label: 'Introducing allocation principles',
+    label: 'Allocation across the Pacific',
     target: { type: 'hash', id: 'allocation' },
   },
   {
@@ -46,16 +53,6 @@ export const CHARTS = [
     id: 'palau',
     label: 'The case of Palau',
     target: { type: 'hash', id: 'palau' },
-  },
-  {
-    id: 'allocation-map',
-    label: 'Allocation across the Pacific',
-    target: { type: 'hash', id: 'allocation-map' },
-  },
-  {
-    id: 'asr',
-    label: 'A fair share',
-    target: { type: 'hash', id: 'asr' },
   },
 ]
 
@@ -84,31 +81,35 @@ function scrollToGlobeProgress(progress, instant) {
   window.scrollTo({ top, behavior: instant ? 'auto' : 'smooth' })
 }
 
-function scrollToSection(id, instant, progress) {
-  if (progress != null) {
-    const el = document.getElementById(id)
-    if (!el) return
-    const travel = Math.max(0, el.offsetHeight - window.innerHeight)
+function scrollToSection(id, instant, { progress, beat } = {}) {
+  const el = document.getElementById(id)
+  if (!el) return
+  const origin = el.getBoundingClientRect().top + window.scrollY
+  if (beat != null) {
     window.scrollTo({
-      top: el.offsetTop + progress * travel,
+      top: origin + beat * window.innerHeight,
       behavior: instant ? 'auto' : 'smooth',
     })
     return
   }
-  document.getElementById(id)?.scrollIntoView({
+  /* Default: last pinned frame, so toggles / final layout are already on. */
+  const travel = Math.max(0, el.offsetHeight - window.innerHeight)
+  const t = progress != null ? progress : 1
+  window.scrollTo({
+    top: origin + t * travel,
     behavior: instant ? 'auto' : 'smooth',
-    block: 'start',
   })
 }
 
 function readActiveChartId() {
-  if (sectionIsActive('asr')) return 'asr'
-  if (sectionIsActive('allocation-map')) return 'allocation-map'
   if (sectionIsActive('palau')) return 'palau'
   if (sectionIsActive('pacific-vs-world')) return 'pacific-vs-world'
   if (sectionIsActive('ranking')) return 'ranking'
   if (sectionIsActive('allocation')) return 'allocation'
-  if (sectionProgress('budget') > 0.42) return 'global-asr'
+  if (sectionIsActive('asr-viz')) return 'asr-viz'
+  if (sectionProgress('budget') > (SWARM_ASR_BEAT - 0.15) / Math.max(1, SWARM_BEAT_COUNT - 1)) {
+    return 'global-asr'
+  }
   if (sectionIsActive('budget')) return 'budget'
   return 'pacific-ghg'
 }
@@ -138,7 +139,10 @@ function goToChart(chart, { frozen, instant }) {
   }
 
   if (chart.target.type === 'hash') {
-    scrollToSection(chart.target.id, instant, chart.target.progress)
+    scrollToSection(chart.target.id, instant, {
+      progress: chart.target.progress,
+      beat: chart.target.beat,
+    })
     return
   }
   scrollToGlobeProgress(chart.target.progress, instant)
@@ -199,7 +203,6 @@ export function Timeline({
   frozen = false,
 }) {
   const reduceMotion = useReducedMotion()
-  const instant = !!reduceMotion
   const shown = CHARTS.slice(0, Math.max(1, Math.min(revealedCount, CHARTS.length)))
   /* Deep-link / refresh already past the first beat: paint the earned list
      without a stacked enter. Later beats still fade in. */
@@ -233,7 +236,7 @@ export function Timeline({
                 className={`chart-timeline__btn${active ? ' is-active' : ''}`}
                 aria-current={active ? 'step' : undefined}
                 tabIndex={visible ? 0 : -1}
-                onClick={() => goToChart(chart, { frozen, instant })}
+                onClick={() => goToChart(chart, { frozen, instant: true })}
               >
                 <span className="chart-timeline__dot" aria-hidden="true" />
                 <span className="chart-timeline__label">{chart.label}</span>
