@@ -1,63 +1,87 @@
 /* ── Design tokens ───────────────────────────────────────────────────────────
-   Light editorial piece. Type and ink follow Apple’s public web language:
-   SF / Helvetica Neue at regular+semibold, near-black on white, secondary
-   grey that still clears WCAG AA at caption size.
-   Series slots are the validated categorical order, dark steps.
-   Verified with the dataviz validator against surface #0c1720:
-   lightness band PASS · chroma floor PASS · CVD sep PASS (worst adj ΔE 8.4)
-   · normal-vision floor PASS (19.3) · contrast vs surface PASS (all ≥3:1)
-   Re-run the validator before changing any --series-* or --surface-* value.
+   Pastel-pop editorial. The shell is a barely-lilac paper with plum ink
+   instead of neutral black, so the page reads playful rather than corporate.
+   Series slots are candy-bright but kept in a single lightness band so no
+   one hue shouts over the others.
+
+   Every accent ships as a PAIR:
+     --x        the pop fill — discs, bands, flows, swatches, thick strokes
+     --x-ink    the same hue deepened to ≥4.5:1 on paper — text and hairlines
+   Bright fills never carry small text. Reach for the -ink twin there.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
   color-scheme: light;
 
-  /* Light shell — Apple-like paper and ink */
-  --paper: #ffffff;
-  --ink: #1d1d1f;
-  --ink-secondary: #6e6e73; /* ~4.6:1 on white — readable at 13px+ */
-  --ink-muted: #6e6e73;
-  --hairline: #d2d2d7;
+  /* Shell — soft lilac paper, plum ink */
+  --paper: #fdfbff;
+  --ink: #221c35;
+  --ink-secondary: #6e6885; /* 5.3:1 on paper */
+  --ink-muted: #766f8f;     /* 4.6:1 — still AA at caption size */
+  --hairline: #e6e0f5;
   /* Timeline panel. The stage stays full-bleed; the panel overlays after the title. */
   --app-sidebar: 16rem;
 
-  /* Surfaces (dark chart tokens — keep for any remaining dark figures) */
-  --surface-0: #08111a;   /* page ground, deepest */
-  --surface-1: #0c1720;   /* chart surface — the validated one */
-  --surface-2: #12212c;   /* raised: step cards, tooltips */
-  --surface-3: #1b2f3c;   /* hairlines, wells */
+  /* Surfaces — light washes; the piece has no dark figures left */
+  --surface-0: #faf7ff;   /* page ground */
+  --surface-1: #f4f0ff;   /* chart surface, hover wells */
+  --surface-2: #ede7fb;   /* raised: step cards, tooltips */
+  --surface-3: #ded6f2;   /* hairlines, wells */
 
-  /* Ink on dark surfaces */
-  --text-primary:   #f2f6f7;
-  --text-secondary: #a9bcc4;
-  --text-muted:     #6f858f;
+  /* Ink on those surfaces */
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-secondary);
+  --text-muted:     var(--ink-muted);
 
   /* Categorical series — fixed order, never cycled */
-  --series-1: #3987e5;  /* blue    */
-  --series-2: #c45a30;  /* rust — large emitters, sits with the globe terracotta */
-  --series-3: #1b7a68;  /* lagoon — Pacific, teal rather than mint */
-  --series-4: #c98500;  /* yellow  */
-  --series-5: #d55181;  /* magenta */
-  --series-6: #008300;  /* green   */
-  --series-7: #9085e9;  /* violet  */
-  --series-8: #e66767;  /* red     */
+  --series-1: #3b9af0;  /* sky       */
+  --series-2: #ff6b5b;  /* coral — large emitters, sits with the globe ramp */
+  --series-3: #12bfa8;  /* lagoon    */
+  --series-4: #f9a61a;  /* marigold  */
+  --series-5: #ff6fa8;  /* bubblegum */
+  --series-6: #35ce84;  /* mint      */
+  --series-7: #9b7bff;  /* lilac     */
+  --series-8: #ff5c7a;  /* poppy     */
+
+  --series-1-ink: #1668c4;
+  --series-2-ink: #d73729;
+  --series-3-ink: #0a8272;
+  --series-4-ink: #a26600;
+  --series-5-ink: #cd3a75;
+  --series-6-ink: #158451;
+  --series-7-ink: #6b45e0;
+  --series-8-ink: #d22e51;
 
   /* Status — reserved, never reused as a series */
-  --status-good:     #0ca30c;
-  --status-warning:  #fab219;
-  --status-serious:  #ec835a;
-  --status-critical: #d03b3b;
+  --status-good:     #35ce84;
+  --status-warning:  #ffc53d;
+  --status-serious:  #ff9457;
+  --status-critical: #ff4d6d;
+
+  --status-good-ink:     #158451;
+  --status-warning-ink:  #986b00;
+  --status-serious-ink:  #bd5516;
+  --status-critical-ink: #d62b4e;
 
   /* Semantic roles for this story */
   --safe:      var(--status-good);      /* within planetary boundary / ASR < 1 */
   --breached:  var(--status-critical);  /* boundary transgressed / ASR > 1     */
   --pacific:   var(--series-3);         /* Pacific nations                     */
   --emitter:   var(--series-2);         /* high-ASR economies                  */
-  --world:     #a8b2b8;                 /* rest-of-world marks on white        */
+  --pacific-ink: var(--series-3-ink);
+  --emitter-ink: var(--series-2-ink);
+  --world:     #b7afd0;                 /* rest-of-world marks on paper        */
+
+  /* ASR disc scale. Discs wash at 0.26, so the fills run bright; the -ink
+     twins carry the legend words. Mirrored in AsrCountry.jsx — change both. */
+  --asr-under:     #23c29a;  /* mint — inside the fair share */
+  --asr-over:      #ffb020;  /* gold — overshoot             */
+  --asr-under-ink: #0d8268;
+  --asr-over-ink:  #a36600;
 
   /* Chart furniture — recessive by rule */
-  --grid-line: #1b2f3c;
-  --axis-line: #2a4453;
+  --grid-line: #ebe5f8;
+  --axis-line: #b9afd8;
 
   /* Type — system UI (SF on Apple) then Helvetica Neue. Regular body, never Light. */
   --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;

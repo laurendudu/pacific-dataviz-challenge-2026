@@ -118,8 +118,8 @@ function sidebarShouldOpen(progress, elapsedMs) {
 
 const PAPER = '#ffffff'
 const LAND_STROKE = '#ffffff'
-const ISLAND_STROKE = '#5c322c'
-const GRID_STROKE = '#c5ccd3'
+const ISLAND_STROKE = '#8a2350'
+const GRID_STROKE = '#ded9ee'
 
 const graticule = geoGraticule().step([15, 15])
 
@@ -286,10 +286,11 @@ const diagramCountries = [
 /* Continuous light->dark red over each country's share of world emissions:
    palest for the smallest contributor, darkest for the largest.
 
-   The six anchors are the classed palette this scene used before — derived by
-   walking a Lab interpolation until the lightest step cleared 2:1 against
-   white, then stepping evenly. Read continuously they keep that muted brick
-   hue rather than the orange cast of d3's own Reds.
+   Low end is a blush so tiny shares (the Pacific, most of Africa) read as a
+   wash. The ramp warms through coral to a deep raspberry, so China and the US
+   land on #8a2350 — hot rather than brick, and still the darkest thing on the
+   map. Hue drifts peach → pink on purpose; lightness only ever falls, which is
+   the part a choropleth actually has to get right.
 
    Shares are brutally skewed — China 31.3%, Nauru 0.000003%, seven orders of
    magnitude — so the ramp position is a POWER of the share, not the share
@@ -300,7 +301,7 @@ const diagramCountries = [
    159 of 198 countries — most of Africa, all fourteen Pacific islands — sit
    in the lightest fifth of the ramp. */
 const PALETTE = [
-  '#dba99f', '#ca8e82', '#b87267', '#a6574d', '#933c34', '#7f1d1d',
+  '#fff1ec', '#ffdcd2', '#ffc0b4', '#ff9e92', '#fa7a72', '#e85567', '#c43a62', '#8a2350',
 ]
 const RAMP_EXPONENT = 0.35
 
@@ -326,7 +327,7 @@ const LEGEND_GRADIENT = `linear-gradient(to right, ${
    cent bunches into the first sixth of the bar, so 0.1% had nowhere to sit. */
 const LEGEND_TICKS = [0.01, 1, 5]
 
-const NO_DATA = '#eceff1'
+const NO_DATA = '#f0ecf9'
 
 export function GlobeScene() {
   return (
@@ -397,7 +398,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
 
   /* Anchor the dark end on the largest share actually in the file rather than
      a literal, so re-running notebook 04 for another year still lands China
-     (or whoever leads it) on the darkest red. */
+     (or whoever leads it) on the darkest raspberry. */
   const ramp = useMemo(() => {
     if (!shares) return null
     return makeRamp(Math.max(...shares.values()))
@@ -665,8 +666,10 @@ export function Globe({ progress, progressRef, frozen = false }) {
         >
           <defs>
             <radialGradient id="shade" cx="34%" cy="30%" r="80%">
-              <stop offset="55%" stopColor="#000" stopOpacity="0" />
-              <stop offset="100%" stopColor="#000" stopOpacity="0.45" />
+              {/* Plum rather than black, and lighter: pure black at 0.45 sucked
+                  the chroma out of the ramp's warm end at the limb. */}
+              <stop offset="55%" stopColor="#3a2a52" stopOpacity="0" />
+              <stop offset="100%" stopColor="#3a2a52" stopOpacity="0.30" />
             </radialGradient>
           </defs>
 
@@ -685,7 +688,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
                 <>
               <circle cx={cx} cy={cy} r={rDraw} fill={PAPER} />
               <circle cx={cx} cy={cy} r={rDraw} fill="none"
-                      stroke="#d9dde1" strokeWidth="1" />
+                      stroke="var(--hairline)" strokeWidth="1" />
 
               {graticuleD ? (
                 <path
@@ -751,7 +754,7 @@ export function Globe({ progress, progressRef, frozen = false }) {
                       />
                       <text
                         className="globe__label"
-                        fill="#111111"
+                        fill="var(--ink)"
                         fontWeight="400"
                         textAnchor={z.anchor}
                         x={z.lx}
