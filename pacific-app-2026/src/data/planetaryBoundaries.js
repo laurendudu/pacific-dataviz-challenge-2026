@@ -77,7 +77,7 @@ const CONTROL_VARIABLES = {
   blueWater: {
     label: 'Land with human-induced disturbance in streamflow',
     unit: '%',
-    baseline: 11.3,     // preindustrial-like state, ~half the present value
+    baseline: 10.3,     // preindustrial baseline median (PHC boundary page)
     boundary: 12.9,
     highRisk: 50,
     current: 22.6,
@@ -86,7 +86,7 @@ const CONTROL_VARIABLES = {
   greenWater: {
     label: 'Land with human-induced disturbance in soil moisture',
     unit: '%',
-    baseline: 11.0,
+    baseline: 9.8,
     boundary: 12.4,
     highRisk: 50,
     current: 22.0,
@@ -113,7 +113,7 @@ const CONTROL_VARIABLES = {
   aragonite: {
     label: 'Global mean surface aragonite saturation state',
     unit: 'Ω',
-    baseline: 3.575,    // revised preindustrial Ω; the boundary is 80% of it
+    baseline: 3.57,     // revised preindustrial Ω; the boundary is 80% of it
     boundary: 2.86,
     highRisk: 2.75,
     current: 2.84,
@@ -122,18 +122,18 @@ const CONTROL_VARIABLES = {
   aod: {
     label: 'Interhemispheric difference in aerosol optical depth',
     unit: 'ΔAOD',
-    baseline: 0.03,
+    baseline: 0.04,
     boundary: 0.10,
     highRisk: 0.25,
     current: 0.063,
     direction: 'up',
   },
   ozone: {
-    label: 'Global average stratospheric O₃ concentration',
+    label: 'Average stratospheric O₃ concentration (60°S–60°N)',
     unit: 'DU',
-    baseline: 290,
-    boundary: 277,
-    highRisk: 263,
+    baseline: 292,      // 1964–1980 mean; boundary is a 5% reduction, high risk 10%
+    boundary: 277.4,
+    highRisk: 262.8,
     current: 285.7,
     direction: 'down',
   },
@@ -220,15 +220,15 @@ export function statusOf(boundary) {
 }
 
 export const STATUS_FILL = {
-  safe: '#4dce82',
-  increasing: '#f6c22e',
-  high: '#f06a61',
+  safe: '#4fe0a0',
+  increasing: '#ffcc4d',
+  high: '#ff7a85',
 }
 
 export const STATUS_STROKE = {
-  safe: '#2ea863',
-  increasing: '#d9a40b',
-  high: '#d94c44',
+  safe: '#17b981',
+  increasing: '#e0a400',
+  high: '#ef4f63',
 }
 
 export const CROSSED = BOUNDARIES.filter((b) => b.zone !== 'safe').length

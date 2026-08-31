@@ -7,9 +7,6 @@ import {
   BOUNDARIES,
   HIGH_RISK,
   SCALE_MAX,
-  STATUS_FILL,
-  STATUS_STROKE,
-  statusOf,
 } from '../../data/planetaryBoundaries'
 
 /* Visual radii relative to the earth / planetary-boundary circle. */
@@ -18,19 +15,25 @@ const SPOKE_RATIO = 1.72
 const LABEL_RATIO = 1.86
 const RADAR = [1.14, 1.30, 1.46, 1.64]
 
-const RING = '#8b95a0'
-const SPOKE = '#c5ccd3'
-const PB_STROKE = '#4a5560'
-const HR_STROKE = '#d4a017'
-const GREY_FILL = '#b8c0c8'
-const GREY_STROKE = '#8b95a0'
+const RING = '#c3bbdd'
+const SPOKE = '#4a4260'
+const PB_STROKE = '#5a5177'
+const HR_STROKE = '#f5a623'
+const GREY_FILL = '#cfc9e4'
+const GREY_STROKE = '#a79ec6'
+const WEDGE_STROKE = '#6e6688'
 
-const FILL_FROM_GREY = Object.fromEntries(
-  Object.entries(STATUS_FILL).map(([k, hex]) => [k, interpolateRgb(GREY_FILL, hex)]),
-)
-const STROKE_FROM_GREY = Object.fromEntries(
-  Object.entries(STATUS_STROKE).map(([k, hex]) => [k, interpolateRgb(GREY_STROKE, hex)]),
-)
+/* Zone colours — radial bands, not per-boundary hues. */
+const ZONE_GREEN = '#35ce84'
+const ZONE_ORANGE = '#ffb13d'
+const ZONE_RED = '#ff5a5f'
+const SOS_BG = '#cff5e2'
+const ZOIR_BG = '#ffe3a8'
+
+/** Gradient stop offsets as a fraction of the outer (spoke) radius. */
+const SOS_STOP = 1 / SPOKE_RATIO
+const HR_STOP = HR_RATIO / SPOKE_RATIO
+const ZONE_BLEND = 0.04
 
 /** 7-of-9 caption — full colour, no climate dim. */
 export const SEVEN_CROSSED = { from: 0.70, to: 0.80 }
@@ -48,7 +51,7 @@ export const CLIMATE_LOOK = { from: 0.82, to: 1.05 }
  *   0.48  nine spokes
  *   0.54  names
  *   0.52  values grow in grey
- *   0.60  grey → status colour (done before the 7-of-9 caption)
+ *   0.60  grey → zone gradient (green SOS, orange ZoIR, red beyond)
  *   0.82  climate caption + highlight; other wedges recede
  */
 export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) {
@@ -63,6 +66,8 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
   const zonesOut = easeOut(slice(p, 0.50, 0.62))
   const colorize = easeInOutSmooth(slice(p, 0.60, 0.68))
   const focus = beatOpacity(p, CLIMATE_LOOK.from, CLIMATE_LOOK.to)
+  /* Curved zone names sit on the empty rings; they go once the pie is cut. */
+  const ringLabelOp = settle * (1 - spokesIn)
 
   const earthR = fromR
   const hrR = earthR * interpolateNumber(RADAR[2], HR_RATIO)(settle)
@@ -91,13 +96,10 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
       const startAngle = i * step - step / 2
       const endAngle = startAngle + step
       const mid = startAngle + step / 2
-      const status = statusOf(b)
       out.push({
         ...b,
         i,
         d: outer > 1.5 ? wedgeArc({ innerRadius: 0, outerRadius: outer, startAngle, endAngle }) : null,
-        fill: FILL_FROM_GREY[status](colorize),
-        stroke: STROKE_FROM_GREY[status](colorize),
         startAngle,
         endAngle,
         mid,
@@ -108,7 +110,12 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
       })
     }
     return out
-  }, [valuesIn, colorize, rScale, wedgeArc, n, step, cx, cy, earthR])
+  }, [valuesIn, rScale, wedgeArc, n, step, cx, cy, earthR])
+
+  const zoneGreen = interpolateRgb(GREY_FILL, ZONE_GREEN)(colorize)
+  const zoneOrange = interpolateRgb(GREY_FILL, ZONE_ORANGE)(colorize)
+  const zoneRed = interpolateRgb(GREY_FILL, ZONE_RED)(colorize)
+  const wedgeStroke = interpolateRgb(GREY_STROKE, WEDGE_STROKE)(colorize)
 
   const safeR = earthR * 0.82
   const zoneR = (earthR + hrR) / 2
@@ -126,6 +133,21 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
       <defs>
         <path id={`schema-safe-${uid}`} d={safeArc} fill="none" />
         <path id={`schema-zone-${uid}`} d={zoneArc} fill="none" />
+        {/* userSpaceOnUse at (0,0): wedges are drawn in local space then translated. */}
+        <radialGradient
+          id={`schema-zones-${uid}`}
+          gradientUnits="userSpaceOnUse"
+          cx={0}
+          cy={0}
+          r={earthR * SPOKE_RATIO}
+        >
+          <stop offset="0" stopColor={zoneGreen} />
+          <stop offset={SOS_STOP} stopColor={zoneGreen} />
+          <stop offset={SOS_STOP + ZONE_BLEND} stopColor={zoneOrange} />
+          <stop offset={HR_STOP} stopColor={zoneOrange} />
+          <stop offset={Math.min(1, HR_STOP + ZONE_BLEND)} stopColor={zoneRed} />
+          <stop offset="1" stopColor={zoneRed} />
+        </radialGradient>
       </defs>
 
       {/* Safe operating space — fills the earth circle once the legend lands. */}
@@ -133,14 +155,14 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         cx={cx}
         cy={cy}
         r={earthR}
-        fill="#e3f6ea"
+        fill={SOS_BG}
         opacity={settle * (1 - zonesOut)}
       />
 
       {/* Band between the planetary-boundary circle and the high-risk line. */}
       <path
         d={annulus(cx, cy, earthR, hrR)}
-        fill="#fff6cc"
+        fill={ZOIR_BG}
         fillRule="evenodd"
         opacity={settle * (1 - zonesOut)}
       />
@@ -150,9 +172,9 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
           <path
             key={w.id}
             d={w.d}
-            fill={w.fill}
-            stroke={w.stroke}
-            strokeWidth="0.7"
+            fill={`url(#schema-zones-${uid})`}
+            stroke={wedgeStroke}
+            strokeWidth="0.6"
             opacity={Math.min(1, w.opacity / 0.2) * (w.isClimate ? 1 : 1 - focus * 0.78)}
             transform={`translate(${cx} ${cy})`}
           />
@@ -207,8 +229,8 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
             x2={x2}
             y2={y2}
             stroke={SPOKE}
-            strokeWidth="0.75"
-            opacity={spokesIn * 0.9}
+            strokeWidth="1.5"
+            opacity={spokesIn}
           />
         )
       })}
@@ -217,33 +239,30 @@ export function PlanetaryBoundaries({ progress, cx, cy, fromR, width, height }) 
         <NameLabel key={`n-${w.id}`} wedge={w} opacity={namesIn} />
       ))}
 
-      {/* Painted last so the curved zone names sit on top of wedges. */}
-      <text
-        className="schema__ring-label"
-        fill="#111111"
-        stroke="#ffffff"
-        strokeWidth="2.25"
-        paintOrder="stroke"
-        opacity={settle}
-        pointerEvents="none"
-      >
-        <textPath href={`#schema-safe-${uid}`} startOffset="50%" textAnchor="middle" fill="#111111">
-          Safe operating space
-        </textPath>
-      </text>
-      <text
-        className="schema__ring-label"
-        fill="#111111"
-        stroke="#ffffff"
-        strokeWidth="2.25"
-        paintOrder="stroke"
-        opacity={settle}
-        pointerEvents="none"
-      >
-        <textPath href={`#schema-zone-${uid}`} startOffset="50%" textAnchor="middle" fill="#111111">
-          Zone of increasing risk
-        </textPath>
-      </text>
+      {ringLabelOp > 0.001 ? (
+        <>
+          <text
+            className="schema__ring-label"
+            fill="var(--ink)"
+            opacity={ringLabelOp}
+            pointerEvents="none"
+          >
+            <textPath href={`#schema-safe-${uid}`} startOffset="50%" textAnchor="middle" fill="var(--ink)">
+              Safe operating space
+            </textPath>
+          </text>
+          <text
+            className="schema__ring-label"
+            fill="var(--ink)"
+            opacity={ringLabelOp}
+            pointerEvents="none"
+          >
+            <textPath href={`#schema-zone-${uid}`} startOffset="50%" textAnchor="middle" fill="var(--ink)">
+              Zone of increasing risk
+            </textPath>
+          </text>
+        </>
+      ) : null}
     </g>
   )
 }
@@ -281,6 +300,10 @@ export function SchemaLegend({ progress }) {
       <div className="schema-legend__row">
         <span className="schema-legend__line" />
         <span className="schema-legend__label">Planetary boundary</span>
+      </div>
+      <div className="schema-legend__row">
+        <span className="schema-legend__swatch schema-legend__swatch--zoir" />
+        <span className="schema-legend__label">Zone of increasing risk</span>
       </div>
       <div className="schema-legend__row">
         <span className="schema-legend__line schema-legend__line--risk" />
