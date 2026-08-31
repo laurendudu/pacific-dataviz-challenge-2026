@@ -92,8 +92,6 @@ function RankingMarks({
 }) {
   const reduceMotion = useReducedMotion()
   const colTransition = reduceMotion ? SNAP : SPRING
-  const showEg = revealEg > 0.04
-  const showPr = revealPr > 0.04
   const liveEg = revealEg > 0.45
   const livePr = revealPr > 0.45
   const lastLive = livePr ? 2 : liveEg ? 1 : 0

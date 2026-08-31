@@ -2,10 +2,10 @@
 __pycache__
 memory
 .DS_Store
-PLAN.md
 # Notebook outputs. The tables the app fetches at runtime are tracked:
-# pacific-app-2026/public/data symlinks here, so they must be in the repo for
-# the Pages build to emit dist/data.
+# pacific-app-2026/public/data/ holds one symlink per table pointing back here,
+# so they must be in the repo for the Pages build to emit dist/data. Adding a
+# table the app fetches means un-ignoring it here AND symlinking it there.
 data_viz/*
 !data_viz/asr.json
 !data_viz/asr_gf.json

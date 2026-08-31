@@ -32,7 +32,7 @@ function scrollToXBeat(beat) {
   const origin = el.getBoundingClientRect().top + window.scrollY
   window.scrollTo({
     top: origin + beat * window.innerHeight,
-    behavior: 'smooth',
+    behavior: 'auto',
   })
 }
 
@@ -71,6 +71,7 @@ export function ScatterScene() {
 function ScatterView({ beat }) {
   const reduceMotion = useReducedMotion()
   const rootRef = useRef(null)
+  const jumping = useRef(false)
   const [pointer, setPointer] = useState(null)
   const [pinnedIso, setPinnedIso] = useState(null)
   const [previewIso, setPreviewIso] = useState(null)
@@ -87,7 +88,17 @@ function ScatterView({ beat }) {
     if (!allUnlocked) setPicked(null)
   }, [allUnlocked])
 
-  const xVarId = allUnlocked && picked ? picked : scrolledId
+  useEffect(() => {
+    if (allUnlocked) return
+    const onScroll = () => {
+      if (jumping.current) return
+      setPicked((id) => (id == null ? id : null))
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [allUnlocked])
+
+  const xVarId = picked ?? scrolledId
 
   useEffect(() => {
     setPointer(null)
@@ -155,8 +166,16 @@ function ScatterView({ beat }) {
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
                 transition={FADE}
                 onClick={() => {
-                  if (allUnlocked) setPicked(v.id)
-                  else if (i !== beat) scrollToXBeat(i)
+                  setPicked(v.id)
+                  if (!allUnlocked && i !== beat) {
+                    jumping.current = true
+                    scrollToXBeat(i)
+                    requestAnimationFrame(() => {
+                      requestAnimationFrame(() => {
+                        jumping.current = false
+                      })
+                    })
+                  }
                   setPointer(null)
                 }}
               >

@@ -77,7 +77,7 @@ function Lineup({
           )}
         </h2>
         <p className="palau__lede">
-          Six hypotheses, each plotted on the same Pacific islands.
+          Six hypotheses, each plotted against Pacific islands.
         </p>
         <p className="palau__legend">
           <span className="palau__key palau__key--peer" aria-hidden="true" />

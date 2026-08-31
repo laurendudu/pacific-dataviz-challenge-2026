@@ -32,4 +32,4 @@ Reference: https://www.react-graph-gallery.com/react-d3-dataviz-course
 ## Other project rules
 - All data and tools must be **publicly available open data** (competition requirement).
 - At least one official dataset from Pacific Data Hub .Stat Explorer (SPC SDMX) must be used.
-- Full storytelling plan lives in `PLAN.md`.
+- Full storytelling plan lives in `memory/PLAN.md`.
