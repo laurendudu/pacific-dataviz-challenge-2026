@@ -1,8 +1,5 @@
 # Pacific Dataviz Challenge 2026
 
-Pacific island nations emit almost nothing per person, and are among the first
-to lose land, water and harvests to the warming those emissions cause. This
-repo holds the data pipeline and the scrollytelling piece that tell that story.
 
 **Live site:** https://laurendudu.github.io/pacific-dataviz-challenge-2026/
 
