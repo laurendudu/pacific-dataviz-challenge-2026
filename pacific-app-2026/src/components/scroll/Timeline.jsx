@@ -41,7 +41,7 @@ export const CHARTS = [
   },
   {
     id: 'ranking',
-    label: 'Who\'s best in class?',
+    label: 'Who gets a fair share?',
     target: { type: 'hash', id: 'ranking' },
   },
   {
