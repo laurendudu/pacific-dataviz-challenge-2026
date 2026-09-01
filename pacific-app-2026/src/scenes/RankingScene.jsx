@@ -236,7 +236,7 @@ function RankingView({
       className={`rank${volume ? ' alluvial is-volume' : ''}${showRow ? ' is-row-on' : ' is-row-off'}`}
     >
       <div className="rank__captions">
-        <p className="rank__caption">Who gets a fair share?</p>
+        <p className="rank__caption">Who's best in class?</p>
         <div className="rank__ledes">
           {CAPTIONS.map((text, i) => {
             const on = i === beat
