@@ -159,6 +159,7 @@ to a climate-exposure index, but Pacific-only, so it cannot carry a world x axis
 
 | | Source | What | Notebook |
 |---|---|---|---|
+| ✅ | [Planetary Health Check 2025](https://www.planetaryhealthcheck.org/) (PBScience / Potsdam Institute for Climate Impact Research), executive summary, September 2025; Holocene baselines for the two untransgressed processes from [Richardson et al. 2023](https://doi.org/10.1126/sciadv.adh2458), *Earth beyond six of nine planetary boundaries*, Science Advances | Thirteen measured control variables across nine processes, with each process's boundary and high-risk line - the opening ring in `GlobeScene`. Transcribed as constants in `planetaryBoundaries.js`, not downloaded | - |
 | ✅ | [Our World in Data - CO₂ and GHG](https://github.com/owid/co2-data) | `total_ghg_excluding_lucf` for every non-Pacific country; wraps EDGAR and the Global Carbon Project | 02 |
 | ✅ | [ND-GAIN Country Index 2026](https://gain.nd.edu/our-work/country-index/download-data/) (University of Notre Dame, CC-licensed) | Climate **exposure**, 192 countries - the scatter's headline x axis. The **vulnerability** composite ships too, as the counter-example the scene argues against | 05 |
 | ✅ | [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal) ([API](https://unstats.un.org/sdgapi/swagger/)), indicator 11.5.2, series `VC_DSR_LSGP` | Direct economic loss from disasters as % of GDP, Sendai Framework, 149 countries | 05 |

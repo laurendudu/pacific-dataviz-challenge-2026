@@ -67,6 +67,14 @@ const DATA_GROUPS = [
     title: 'Additional sources',
     items: [
       {
+        prefix: 'Planetary boundaries: ',
+        links: [
+          { label: 'Planetary Health Check 2025 (PBScience / Potsdam Institute for Climate Impact Research)', url: 'https://www.planetaryhealthcheck.org/' },
+          { label: 'Richardson et al. 2023', url: 'https://doi.org/10.1126/sciadv.adh2458' },
+        ],
+        use: 'the nine control variables with their boundary and high-risk lines, the ring that opens the piece; Richardson supplies the Holocene baselines for the two processes still inside their boundary',
+      },
+      {
         links: [{ label: 'Our World in Data: CO₂ and greenhouse gas emissions', url: 'https://github.com/owid/co2-data' }],
         use: 'total GHG emissions for every non-Pacific country (wrapping EDGAR and the Global Carbon Project)',
       },
@@ -99,6 +107,10 @@ const DATA_GROUPS = [
       {
         links: [{ label: 'Bjørn & Hauschild (2015)', url: 'https://doi.org/10.1007/s11367-015-0899-2' }],
         use: 'the 2 °C climate carrying capacity of 6.81 GtCO₂-eq/yr, the budget every fair-share rule divides',
+      },
+      {
+        links: [{ label: 'UNCASExt / PyUNCASE (de Bantel et al.; Pirson et al.)', url: 'https://setac.confex.com/setac/europe2026/meetingapp.cgi/Paper/32699' }],
+        use: 'the allocation-method definitions the grandfathering, egalitarian and prioritarian formulas follow',
       },
     ],
   },
