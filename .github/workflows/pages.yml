@@ -35,7 +35,7 @@ jobs:
       - run: npm run build
 
       # public/data holds one symlink per table into ../../data_viz, which is
-      # ignored except for the tracked tables — so a table the app fetches but
+      # ignored except for the tracked tables - so a table the app fetches but
       # nobody symlinked or un-ignored fails loudly here rather than as a 404
       # on the live site.
       - name: Check every table the app fetches made it into the bundle

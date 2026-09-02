@@ -10,7 +10,7 @@ import { useChartDimensions } from './useChartDimensions'
  *
  * The unit is the one the reader learned upstream: one dot is 0.1 Gt, so the
  * field is 433 dots. At that unit the Pacific's entire overshoot is roughly a
- * *tenth of a single dot* — under a pixel — which is the finding, but a
+ * *tenth of a single dot* - under a pixel - which is the finding, but a
  * finding that is invisible reads as a broken toggle rather than as "almost
  * nothing".
  *
@@ -44,7 +44,7 @@ function quantize(n) {
  * big swarm panels upstream but overflows here: this panel can be short and
  * wide, and 433 dots at a floored radius pack into a disc taller than the
  * box, so the top and bottom rows fall outside the SVG and are clipped. The
- * fixed 2.5px gap makes it worse — below about 2.5px of radius the gap, not
+ * fixed 2.5px gap makes it worse - below about 2.5px of radius the gap, not
  * the dot, is what sets the spacing.
  *
  * So the gap shrinks with the dot, and the floor drops to something that can

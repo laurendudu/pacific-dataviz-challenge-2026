@@ -138,8 +138,8 @@ function AllocationView({ beat, tables, rows }) {
               /* `layout` on the capsule, not just the pill. The pill's
                  `layoutId` projection measures against the viewport, so any
                  move of this control leaves the shade behind at the old
-                 height. The scroll beats no longer move it — the toggle row
-                 above reserves its full height from the start — but a resize
+                 height. The scroll beats no longer move it - the toggle row
+                 above reserves its full height from the start - but a resize
                  still rewraps that row. As a projection parent the capsule
                  absorbs the move and the pill, whose box relative to it never
                  changes, travels with it. Position only: the capsule never

@@ -14,7 +14,7 @@ data_viz/*
 !data_viz/scatter.json
 !data_viz/palau_context.json
 
-# pyaesa workspace — downloaded and computed, rebuilt by the notebooks
+# pyaesa workspace - downloaded and computed, rebuilt by the notebooks
 data_raw/
 data_processed/
 asr/

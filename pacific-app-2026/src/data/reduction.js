@@ -5,8 +5,8 @@ import { DOT_GT, SPENT_GT } from './ghgBudget2023'
 /**
  * "What if every overshooter cut to exactly its fair share?"
  *
- * The reduction is one line of arithmetic — ASR = emissions / allocation, so
- * a country at ASR > 1 has to shed `emissions × (1 − 1/ASR)` to reach 1 — but
+ * The reduction is one line of arithmetic - ASR = emissions / allocation, so
+ * a country at ASR > 1 has to shed `emissions × (1 − 1/ASR)` to reach 1 - but
  * the answer depends entirely on which rule set the allocation, which is why
  * this runs against whichever of the three ASR tables is on screen.
  *
@@ -95,7 +95,7 @@ function scopeExcess(rows, values, isos) {
     if (!row) continue
     const asr = values.get(iso)
     if (!Number.isFinite(asr)) {
-      /* No ratio under this rule — prioritarian has no PPP GDP for New
+      /* No ratio under this rule - prioritarian has no PPP GDP for New
          Caledonia or French Polynesia. Such a country is not silently
          counted as compliant; the scene flags it. */
       unscored.push(iso)

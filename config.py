@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 # One pyaesa project. Every aSoCC / aCC / ASR output lands in ROOT / PROJECT.
 # pyaesa keys its cached metadata on the project name, so a second project is
-# only ever needed to run a genuinely different method — not a different
+# only ever needed to run a genuinely different method - not a different
 # country set.
 PROJECT = "asr"
 
@@ -25,13 +25,17 @@ YEAR_COLS = [str(y) for y in YEARS]
 LCA_VERSION = "merged"
 LCIA_METHOD = "gwp100_lcia"
 LCA_FILE = (
-    ROOT / PROJECT / "A_lca" / "ext_lca" / "deterministic"
+    ROOT
+    / PROJECT
+    / "A_lca"
+    / "ext_lca"
+    / "deterministic"
     / f"{LCA_VERSION}__{LCIA_METHOD}.csv"
 )
 
 # L1.b = production-based accounting (PBA): total output produced in region
 # r_p, regardless of where it is consumed. Our emissions data is territorial
-# (where it physically happens), so this is the honest FU — L1.a is labelled
+# (where it physically happens), so this is the honest FU - L1.a is labelled
 # consumption-based (CBA) in pyaesa's docs and would misdescribe the data.
 # The selector column pyaesa expects in the LCA CSV changes to match: r_p,
 # not r_f.
@@ -42,7 +46,7 @@ REGION_COL = "r_p"
 #
 # The dynamic AR6 budget is built for prospective studies: it front-loads the
 # allowance and places the reductions after the study window. Against it the
-# world sits at 1.17x its 2023 allowance — near compliant — which says nothing
+# world sits at 1.17x its 2023 allowance - near compliant - which says nothing
 # useful about a historical snapshot. The static carrying capacity is a fixed
 # annual safe level, and against it the world emits 6.4x what it may.
 #
@@ -66,8 +70,8 @@ REGION_COL = "r_p"
 #
 # The strict planetary-boundary value is a different, tighter number (~1.06 C,
 # the PB framework level). It is not in pyaesa's gwp100 table: the PB framework
-# defines climate by *state* variables — atmospheric CO2 in ppm, energy
-# imbalance in W/m2 — which is why pyaesa carries them separately in
+# defines climate by *state* variables - atmospheric CO2 in ppm, energy
+# imbalance in W/m2 - which is why pyaesa carries them separately in
 # pb_lcia_cc_steady_state.csv and cannot use them as a kg CO2-eq/yr flow.
 # Getting a 1.06 C annual budget means taking it from Bjorn & Hauschild (2015)
 # Appendix C and overriding min_cc by hand.
@@ -78,27 +82,47 @@ CC_BOUND = "min_cc"
 
 # ASR results, written by pyaesa under the equal-per-capita allocation.
 ASR_FILE = (
-    ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
-    / f"static_{LCIA_METHOD}" / "results" / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
+    ROOT
+    / PROJECT
+    / "C_asr"
+    / "iso3"
+    / f"ext_lca_{LCA_VERSION}"
+    / "deterministic"
+    / f"static_{LCIA_METHOD}"
+    / "results"
+    / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
 )
 
 # Same file for the prioritarian allocation.
 ASR_FILE_GDP = (
-    ROOT / PROJECT / "C_asr" / "iso3" / f"ext_lca_{LCA_VERSION}" / "deterministic"
-    / f"static_{LCIA_METHOD}" / "results" / f"l1_PR(GDPcap)__{LCIA_METHOD}.csv"
+    ROOT
+    / PROJECT
+    / "C_asr"
+    / "iso3"
+    / f"ext_lca_{LCA_VERSION}"
+    / "deterministic"
+    / f"static_{LCIA_METHOD}"
+    / "results"
+    / f"l1_PR(GDPcap)__{LCIA_METHOD}.csv"
 )
 
 # The allocated carrying capacity under equal per capita, in kg CO2-eq. Summed
 # back over the 198 countries it gives the budget pool the allocation rules
 # divide, which is what the grandfathering rule below is normalised against.
 ACC_FILE = (
-    ROOT / PROJECT / "B2_acc" / "iso3" / "deterministic"
-    / f"static_{LCIA_METHOD}" / "results" / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
+    ROOT
+    / PROJECT
+    / "B2_acc"
+    / "iso3"
+    / "deterministic"
+    / f"static_{LCIA_METHOD}"
+    / "results"
+    / f"l1_EG(Pop)__{LCIA_METHOD}.csv"
 )
 
 # Reference year for the grandfathering allocation, computed in notebook 03.
 #
-# pyaesa knows this rule as AR(E) — acquired rights — and defines it as each
+# pyaesa knows this rule as AR(E) - acquired rights - and defines it as each
 # country's share of world emissions in one fixed reference year. It will not
 # compute it here: source="iso3" is gated to EG(Pop) and PR(GDPcap) only
 # (asocc/orchestration/setup/request/selection.py), because the six AR/PR-HR
@@ -109,8 +133,8 @@ ACC_FILE = (
 # Deliberately set to the window's *last* year, not its first. The choice is
 # load-bearing and the collapse is the point: when the reference year is the
 # displayed year the E_i,base in the share cancels the E_i,t in the numerator,
-# so every country lands on the same ratio — the world's own ASR that year
-# (6.3621 in 2023) — and the map goes flat.
+# so every country lands on the same ratio - the world's own ASR that year
+# (6.3621 in 2023) - and the map goes flat.
 #
 # That flat panel is the argument. Grandfathering-from-today declares all 198
 # countries equally in overshoot while handing the US 2.6 t/person of
@@ -123,7 +147,9 @@ GF_BASE_YEAR = max(YEARS)
 
 # The shipped carrying-capacity table, read directly for reporting the
 # per-person fair share.
-CC_FILE = ROOT / "data_raw" / "carrying_capacities" / f"{LCIA_METHOD}_cc_steady_state.csv"
+CC_FILE = (
+    ROOT / "data_raw" / "carrying_capacities" / f"{LCIA_METHOD}_cc_steady_state.csv"
+)
 
 # Reference tables pyaesa downloads and processes in notebook 01.
 WB_POP = ROOT / "data_processed" / "pop_gdp" / "wb_processed.csv"
@@ -138,8 +164,19 @@ VIZ = ROOT / "data_viz"
 # American Samoa (ASM), Guam (GUM) and the Northern Mariana Islands (MNP) have
 # SPC emissions data but no World Bank entry, so they cannot get an ASR.
 PACIFIC = {
-    "FJ": "FJI", "FM": "FSM", "KI": "KIR", "MH": "MHL", "NC": "NCL",
-    "NR": "NRU", "PF": "PYF", "PG": "PNG", "PW": "PLW", "SB": "SLB",
-    "TO": "TON", "TV": "TUV", "VU": "VUT", "WS": "WSM",
+    "FJ": "FJI",
+    "FM": "FSM",
+    "KI": "KIR",
+    "MH": "MHL",
+    "NC": "NCL",
+    "NR": "NRU",
+    "PF": "PYF",
+    "PG": "PNG",
+    "PW": "PLW",
+    "SB": "SLB",
+    "TO": "TON",
+    "TV": "TUV",
+    "VU": "VUT",
+    "WS": "WSM",
 }
 PACIFIC_ISO3 = sorted(PACIFIC.values())

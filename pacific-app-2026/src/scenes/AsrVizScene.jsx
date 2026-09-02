@@ -21,7 +21,7 @@ const STAGES = ['well', 'mint', 'gold']
 
 const CAPTIONS = [
   'The outer edge of the center circle to the red dashed ring represents an ASR of 1.',
-  'If the ASR falls below once, the concerned region emits less than its share of the global GHG budget.',
+  'If the ASR falls below one, the concerned region emits less than its share of the global GHG budget.',
   `Past the red dashed ring, the region emits more than its share of the global GHG budget. 
   The emissions are represented on a log10 scale.`,
 ]

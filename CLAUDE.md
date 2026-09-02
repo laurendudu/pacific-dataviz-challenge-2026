@@ -5,7 +5,7 @@
 **This is non-negotiable.** Every chart in `pacific-app-2026/` computes with D3 and draws with React.
 
 - **D3 does math only.** Scales, layouts, projections, path-string generators, interpolators, formatters. Numbers in, numbers (or a path `d` string) out.
-- **React does all rendering.** Charts return JSX — `<svg>`, `<g>`, `<path>`, `<circle>`, `<rect>`, `<text>`. No D3 ever touches the DOM.
+- **React does all rendering.** Charts return JSX - `<svg>`, `<g>`, `<path>`, `<circle>`, `<rect>`, `<text>`. No D3 ever touches the DOM.
 
 ### Allowed D3 modules
 `d3-scale`, `d3-array`, `d3-shape`, `d3-hierarchy`, `d3-geo`, `d3-force`, `d3-interpolate`, `d3-color`, `d3-scale-chromatic`, `d3-format`, `d3-time`, `d3-time-format`, `d3-delaunay`, `d3-sankey`, `d3-contour`, `d3-polygon`, `d3-random`, `d3-ease`
@@ -26,7 +26,7 @@ Never write `d3.select(...)`, `.append(...)`, `.attr(...)`, or `.data().enter()`
 
 Compute D3 values in the component body wrapped in `useMemo`, keyed on data + dimensions.
 
-Most D3 examples online are written in the banned rendering style — **refactor them into JSX, don't copy them.**
+Most D3 examples online are written in the banned rendering style - **refactor them into JSX, don't copy them.**
 Reference: https://www.react-graph-gallery.com/react-d3-dataviz-course
 
 ## Other project rules
