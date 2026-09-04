@@ -28,7 +28,8 @@ export const PACIFIC_TERRITORIES = [
 /**
  * Beats inside `#allocation`:
  * 0 empty map (wells, no ratios) · 1 grandfathering · 2 egalitarian ·
- * 3 prioritarian · 4 hold (toggles live).
+ * 3 prioritarian · 4 hold. Each rule’s toggle is clickable as soon as
+ * its beat unlocks; earlier rules stay reachable from then on.
  */
 export const ALLOCATION_BEATS = {
   empty: 0,

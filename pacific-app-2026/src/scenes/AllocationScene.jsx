@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { Scene } from '../components/scroll/Scene'
 import { AllocationPrinciples } from '../components/chart/AllocationPrinciples'
@@ -31,8 +31,8 @@ const SCALE_OPTIONS = [
 /**
  * Follows the world-disc scale guide. Arrival is the Pacific with no
  * ratios plotted: wells and the ASR = 1 ring only. Scroll names the
- * three rules one beat at a time. After all three unlock, the same frames
- * are reachable from the toggles.
+ * three rules one beat at a time; each unlocked toggle is clickable so
+ * earlier rules stay reachable without waiting for the hold beat.
  */
 export function AllocationScene() {
   const tables = useAsrTables(YEAR)
@@ -53,11 +53,13 @@ export function AllocationScene() {
   )
 }
 
-/** empty map → gf → eg → pr → hold with all toggles live. */
+/** empty map → gf → eg → pr → hold. */
 const ALLOC_BEATS = ALLOCATION_BEATS.hold + 1
 
 function AllocationView({ beat, tables, rows }) {
   const reduceMotion = useReducedMotion()
+  /* `{ id, beat }` so a click only overrides the scroll frame it was made
+     on; advancing (or going back) returns control to the beat. */
   const [picked, setPicked] = useState(null)
   const [scale, setScale] = useState('log')
 
@@ -66,11 +68,6 @@ function AllocationView({ beat, tables, rows }) {
     eg: beat >= ALLOCATION_BEATS.eg,
     pr: beat >= ALLOCATION_BEATS.pr,
   }
-  const allUnlocked = beat >= ALLOCATION_BEATS.hold
-
-  useEffect(() => {
-    if (!allUnlocked) setPicked(null)
-  }, [allUnlocked])
 
   const scrolled =
     beat <= ALLOCATION_BEATS.empty
@@ -80,8 +77,13 @@ function AllocationView({ beat, tables, rows }) {
         : beat === ALLOCATION_BEATS.eg
           ? 'eg'
           : 'pr'
-  const methodId = allUnlocked && picked ? picked : scrolled
+  const methodId =
+    picked && picked.beat === beat && unlocked[picked.id] ? picked.id : scrolled
   const hasValues = methodId != null
+  const principle = methodId
+    ? PRINCIPLES.find((p) => p.id === methodId) ?? null
+    : null
+  const missingNote = principle?.missing ?? null
 
   return (
     <div className="alloc alloc--map">
@@ -120,13 +122,13 @@ function AllocationView({ beat, tables, rows }) {
                   className={`alloc-toggles__btn${methodId === p.id ? ' is-active' : ''}`}
                   aria-pressed={methodId === p.id}
                   aria-hidden={!live}
-                  tabIndex={live && allUnlocked ? undefined : -1}
-                  disabled={!allUnlocked || !live}
+                  tabIndex={live ? undefined : -1}
+                  disabled={!live}
                   initial={false}
                   animate={{ opacity: live ? 1 : 0 }}
                   transition={reduceMotion ? { duration: 0 } : BTN_FADE}
-                  style={{ pointerEvents: live && allUnlocked ? 'auto' : 'none' }}
-                  onClick={() => { if (allUnlocked) setPicked(p.id) }}
+                  style={{ pointerEvents: live ? 'auto' : 'none' }}
+                  onClick={() => { if (live) setPicked({ id: p.id, beat }) }}
                 >
                   {p.label ?? p.title}
                 </motion.button>
@@ -205,6 +207,9 @@ function AllocationView({ beat, tables, rows }) {
             overshot the allocated share
           </li>
         </ul>
+        {missingNote ? (
+          <p className="alloc__legend-note">* {missingNote}</p>
+        ) : null}
       </div>
     </div>
   )

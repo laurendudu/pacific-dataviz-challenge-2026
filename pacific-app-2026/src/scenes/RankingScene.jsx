@@ -229,6 +229,10 @@ function RankingView({
   }
 
   const tipOn = Boolean(hovered && pointerRef.current)
+  const missingNote =
+    revealPr > 0.45
+      ? (PRINCIPLES.find((p) => p.id === 'pr')?.missing ?? null)
+      : null
 
   return (
     <div
@@ -329,6 +333,9 @@ function RankingView({
             Rest of the world
           </li>
         </ul>
+        {missingNote ? (
+          <p className="rank__legend-note">* {missingNote}</p>
+        ) : null}
       </div>
 
       <AnimatePresence>
@@ -354,13 +361,16 @@ function RankingView({
             </span>
             {model.columns.slice(0, liveCount).map((col, i) => {
               const value = hovered.values[i]
+              const missing = value == null
               const rankText = formatRank(hovered.ranks[i]) ?? '–'
-              const asrText = value == null ? '–' : formatAsr(value)
+              const asrText = missing ? '–' : formatAsr(value)
               const tied = tiePhrase(hovered, i, model.rows.items)
               return (
                 <span key={col.id}>
-                  {`${col.title} ${rankText} · ${asrText}`}
-                  {tied ? ` · ${tied}` : ''}
+                  {missing
+                    ? `${col.title} · no ratio*`
+                    : `${col.title} ${rankText} · ${asrText}`}
+                  {!missing && tied ? ` · ${tied}` : ''}
                 </span>
               )
             })}

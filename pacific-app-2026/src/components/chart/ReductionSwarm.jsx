@@ -5,6 +5,9 @@ import { TOTAL_DOTS } from '../../data/reduction'
 import { DOT_GAP, layoutSwarm } from './swarmLayout'
 import { useChartDimensions } from './useChartDimensions'
 
+const PRIORITARIAN_MISSING_NOTE =
+  'New Caledonia and French Polynesia have no comparable PPP GDP, so they have no ratio under the prioritarian rule.'
+
 /**
  * The 2023 emissions swarm with the reduction taken out of it.
  *
@@ -335,16 +338,19 @@ export function ReductionSwarm({
       ) : null}
       </div>
 
-      <ul className="rswarm__legend" aria-label="Swarm legend">
-        <li>
-          <span className="rswarm__swatch rswarm__swatch--field" aria-hidden="true" />
-          2023 global emissions, 0.1 Gt per dot
-        </li>
-        <li>
-          <span className="rswarm__swatch rswarm__swatch--cut" aria-hidden="true" />
-          Reduced emissions when meeting allocated shares.
-        </li>
-      </ul>
+      <div className="rswarm__legend">
+        <ul className="rswarm__legend-keys" aria-label="Swarm legend">
+          <li>
+            <span className="rswarm__swatch rswarm__swatch--field" aria-hidden="true" />
+            2023 global emissions, 0.1 Gt per dot
+          </li>
+          <li>
+            <span className="rswarm__swatch rswarm__swatch--cut" aria-hidden="true" />
+            Reduced emissions when meeting allocated shares.
+          </li>
+        </ul>
+        <p className="rswarm__legend-note">* {PRIORITARIAN_MISSING_NOTE}</p>
+      </div>
     </div>
   )
 }

@@ -1110,12 +1110,12 @@ svg { display: block; }
   position: relative;
   z-index: 3;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1.5rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 1.15rem;
   margin: 0.7rem 0 0;
   padding-inline: var(--scene-pad-x);
-  max-width: min(72ch, 100%);
+  max-width: 100%;
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: var(--step--1);
@@ -1126,7 +1126,8 @@ svg { display: block; }
 }
 .alloc__legend-keys {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   gap: 0.35rem 1.15rem;
   margin: 0;
   padding: 0;
@@ -1136,6 +1137,7 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  white-space: nowrap;
 }
 .alloc__legend-swatch {
   flex-shrink: 0;
@@ -1143,6 +1145,11 @@ svg { display: block; }
   height: 0.7rem;
   border-radius: 50%;
   opacity: 0.85;
+}
+.alloc__legend-note {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 .alloc .footnote {
   max-width: min(42ch, 52vw);
@@ -1370,6 +1377,10 @@ svg { display: block; }
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
+.alloc-map__island.is-missing {
+  fill: color-mix(in srgb, var(--ink-muted) 22%, var(--paper));
+  stroke: color-mix(in srgb, var(--ink-muted) 55%, var(--paper));
+}
 .alloc-map__zones {
   pointer-events: none;
 }
@@ -1388,8 +1399,12 @@ svg { display: block; }
   stroke-opacity: 0.32;
 }
 .alloc-map__place.is-missing .asr-country__well {
-  fill: var(--paper);
-  fill-opacity: 0.42;
+  fill: color-mix(in srgb, var(--ink-muted) 16%, var(--paper));
+  fill-opacity: 0.9;
+}
+.alloc-map__place.is-missing .asr-country__well-stroke {
+  stroke: var(--ink-muted);
+  stroke-opacity: 0.45;
 }
 .alloc-map__label {
   fill: var(--ink);
@@ -1828,6 +1843,7 @@ svg { display: block; }
   column-gap: 0.45rem;
   row-gap: 0.45rem;
   margin-top: 0.85rem;
+  margin-bottom: 40px;
   padding-inline: var(--scene-pad-x);
   flex: 0 0 auto;
   font-family: var(--font-sans);
@@ -1993,9 +2009,12 @@ svg { display: block; }
   position: relative;
   z-index: 3;
   display: flex;
-  justify-content: flex-start;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 1.15rem;
   margin: 0.35rem 0 0;
   padding-inline: var(--scene-pad-x);
+  max-width: 100%;
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: var(--step--1);
@@ -2005,7 +2024,8 @@ svg { display: block; }
 }
 .scatter__legend-keys {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   justify-content: flex-start;
   gap: 0.35rem 1.15rem;
   margin: 0;
@@ -2016,6 +2036,7 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  white-space: nowrap;
 }
 .scatter__legend-swatch {
   box-sizing: border-box;
@@ -2036,6 +2057,11 @@ svg { display: block; }
 .scatter__legend-swatch--world {
   background: color-mix(in srgb, var(--world) 22%, transparent);
   border-color: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.scatter__legend-note {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 .scatter__tooltip {
   position: absolute;
@@ -2264,6 +2290,11 @@ svg { display: block; }
 }
 .rank__line.is-dim { opacity: 0.06; }
 .rank__line.is-hover { opacity: 1; stroke-width: 2.6; }
+.rank__line.is-missing {
+  stroke: var(--ink-muted);
+  opacity: 0.35;
+}
+.rank__line.is-missing.is-hover { opacity: 0.55; }
 
 .rank__dot {
   stroke: var(--paper);
@@ -2276,6 +2307,8 @@ svg { display: block; }
 .rank__dot--other { fill: var(--ink-muted); }
 .rank__dot.is-dim { opacity: 0.12; }
 .rank__dot.is-hover { opacity: 1; }
+.rank__dot.is-missing { fill: var(--ink-muted); opacity: 0.45; }
+.rank__dot.is-missing.is-hover { opacity: 0.7; }
 
 .rank__tie circle {
   fill: var(--paper);
@@ -2305,6 +2338,11 @@ svg { display: block; }
 .rank__label--emitter { fill: var(--rank-emitter-ink); color: var(--rank-emitter-ink); }
 .rank__label--other { fill: var(--ink-secondary); color: var(--ink-secondary); }
 .rank__label.is-dim { opacity: 0.18; }
+.rank__label.is-missing,
+.rank__label.is-missing .rank__label-n {
+  fill: var(--ink-muted);
+  color: var(--ink-muted);
+}
 .rank__leader {
   fill: none;
   stroke: currentColor;
@@ -2606,12 +2644,12 @@ svg { display: block; }
   position: relative;
   z-index: 3;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1.5rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 1.15rem;
   margin: 0.45rem 0 0;
   padding-inline: var(--scene-pad-x);
-  max-width: min(72ch, 100%);
+  max-width: 100%;
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: var(--step--1);
@@ -2625,7 +2663,8 @@ svg { display: block; }
 }
 .rank__legend-keys {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   gap: 0.35rem 1.15rem;
   margin: 0;
   padding: 0;
@@ -2635,6 +2674,7 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  white-space: nowrap;
 }
 .rank__legend-swatch {
   flex-shrink: 0;
@@ -2647,6 +2687,11 @@ svg { display: block; }
 .rank__legend-swatch--world {
   background: var(--world);
   opacity: 0.72;
+}
+.rank__legend-note {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .rank__tooltip {
@@ -2745,6 +2790,15 @@ svg { display: block; }
 .alluvial-flow.is-hover path,
 .alluvial-flow.is-hover rect {
   fill-opacity: 1;
+}
+.alluvial-flow.is-missing path,
+.alluvial-flow.is-missing rect {
+  fill: var(--ink-muted);
+  fill-opacity: 0.28;
+}
+.alluvial-flow.is-missing.is-hover path,
+.alluvial-flow.is-missing.is-hover rect {
+  fill-opacity: 0.45;
 }
 .alluvial-flow rect {
   stroke: var(--paper);
@@ -3103,6 +3157,7 @@ svg { display: block; }
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem var(--space-s);
+  margin-bottom: 15px;
 }
 .reduction__controls .alloc-toggles { margin-top: 0; margin-bottom: 0; }
 .reduction__switch { margin-top: 0; }
@@ -3170,20 +3225,33 @@ svg { display: block; }
 }
 .rswarm__legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.95rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
   margin: 0;
   padding: 0;
-  list-style: none;
   font-family: var(--font-sans);
   font-size: var(--step--2, 0.74rem);
   line-height: 1.3;
   color: var(--ink-secondary);
 }
-.rswarm__legend li {
+.rswarm__legend-keys {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rswarm__legend-keys li {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+.rswarm__legend-note {
+  margin: 0;
+  max-width: 42ch;
 }
 .rswarm__swatch {
   flex-shrink: 0;

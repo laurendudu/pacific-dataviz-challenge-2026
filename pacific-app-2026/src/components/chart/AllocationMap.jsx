@@ -148,8 +148,12 @@ export function AllocationMap({
   const moveTip = (event, mark) => {
     const box = ref.current?.getBoundingClientRect()
     if (!box) return
+    const copy = asrHoverCopy({ name: mark.name, asr: mark.asr, hideFill })
     setTip({
-      ...asrHoverCopy({ name: mark.name, asr: mark.asr, hideFill }),
+      ...copy,
+      status: mark.missing
+        ? (principle?.missing ?? 'No ratio under this rule')
+        : copy.status,
       x: event.clientX - box.left,
       y: event.clientY - box.top,
     })
@@ -185,7 +189,7 @@ export function AllocationMap({
             m.d ? (
               <path
                 key={`land-${m.iso}`}
-                className="alloc-map__island"
+                className={`alloc-map__island${m.missing ? ' is-missing' : ''}`}
                 d={m.d}
               />
             ) : null
@@ -194,9 +198,11 @@ export function AllocationMap({
           <g className="alloc-map__zones">
             {geom.stacked.map((m) => {
               const copy = asrHoverCopy({ name: m.name, asr: m.asr, hideFill })
-              const title = copy.asrLabel
-                ? `${m.name}, allocated-share ratio ${copy.asrLabel}`
-                : m.name
+              const title = m.missing
+                ? `${m.name}, no ratio under this rule`
+                : copy.asrLabel
+                  ? `${m.name}, allocated-share ratio ${copy.asrLabel}`
+                  : m.name
               return (
                 <g
                   key={m.iso}
@@ -232,11 +238,14 @@ export function AllocationMap({
                 x={m.lx}
                 y={m.ly - (m.lines.length - 1) * LABEL_LINE}
               >
-                {m.lines.map((line, i) => (
-                  <tspan key={line} x={m.lx} dy={i === 0 ? '0.35em' : '1.2em'}>
-                    {line}
-                  </tspan>
-                ))}
+                {m.lines.map((line, i) => {
+                  const last = i === m.lines.length - 1
+                  return (
+                    <tspan key={line} x={m.lx} dy={i === 0 ? '0.35em' : '1.2em'}>
+                      {line}{m.missing && last ? '*' : ''}
+                    </tspan>
+                  )
+                })}
               </text>
             ))}
           </g>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Scene } from '../components/scroll/Scene'
 import { AllocationMap } from '../components/chart/AllocationMap'
@@ -21,7 +21,8 @@ import { beatIndex } from '../hooks/useScrollProgress'
  *
  * Same map as the allocation scene. Scroll names each rule twice: first the
  * live ASR discs, then the same discs with every overshooter clamped to 1.
- * The switch follows that beat until the hold, when both controls go live.
+ * Each unlocked principle toggle and the fair-share switch are clickable as
+ * soon as they appear; earlier rules stay reachable from then on.
  *
  * The swarm beside it does not re-pack when the rule changes. The 2023 field
  * is 433 dots of 0.1 Gt; the Pacific's overshoot is a fraction of one of
@@ -49,27 +50,26 @@ export function ReductionScene() {
 
 function ReductionView({ beat, tables, rows }) {
   const reduceMotion = useReducedMotion()
+  /* `{ id|value, beat }` so a click only overrides the scroll frame it was
+     made on; advancing (or going back) returns control to the beat. */
   const [picked, setPicked] = useState(null)
-  const [toggledReduced, setToggledReduced] = useState(true)
+  const [toggledReduced, setToggledReduced] = useState(null)
 
   const unlocked = {
     gf: beat >= REDUCTION_BEATS.gf,
     eg: beat >= REDUCTION_BEATS.eg,
     pr: beat >= REDUCTION_BEATS.pr,
   }
-  const allUnlocked = beat >= REDUCTION_BEATS.hold
   const scrolled = reductionBeatState(beat)
 
-  useEffect(() => {
-    if (!allUnlocked) {
-      setPicked(null)
-      return
-    }
-    setToggledReduced(true)
-  }, [allUnlocked])
-
-  const methodId = allUnlocked && picked ? picked : scrolled.methodId
-  const reduced = allUnlocked ? toggledReduced : scrolled.reduced
+  const methodId =
+    picked && picked.beat === beat && unlocked[picked.id]
+      ? picked.id
+      : scrolled.methodId
+  const reduced =
+    toggledReduced && toggledReduced.beat === beat
+      ? toggledReduced.value
+      : scrolled.reduced
 
   const principle = methodId
     ? PRINCIPLES.find((p) => p.id === methodId) ?? PRINCIPLES[0]
@@ -111,13 +111,13 @@ function ReductionView({ beat, tables, rows }) {
                     className={`alloc-toggles__btn${methodId === p.id ? ' is-active' : ''}`}
                     aria-pressed={methodId === p.id}
                     aria-hidden={!shown}
-                    tabIndex={shown && allUnlocked ? undefined : -1}
-                    disabled={!allUnlocked || !shown}
+                    tabIndex={shown ? undefined : -1}
+                    disabled={!shown}
                     initial={false}
                     animate={{ opacity: shown ? 1 : 0 }}
                     transition={reduceMotion ? { duration: 0 } : BTN_FADE}
-                    style={{ pointerEvents: shown && allUnlocked ? 'auto' : 'none' }}
-                    onClick={() => { if (allUnlocked) setPicked(p.id) }}
+                    style={{ pointerEvents: shown ? 'auto' : 'none' }}
+                    onClick={() => { if (shown) setPicked({ id: p.id, beat }) }}
                   >
                     {p.label ?? p.title}
                   </motion.button>
@@ -130,13 +130,15 @@ function ReductionView({ beat, tables, rows }) {
               className="alluvial-switch reduction__switch"
               role="switch"
               aria-checked={reduced}
-              aria-disabled={!allUnlocked}
+              aria-disabled={!live}
               initial={false}
               animate={{ opacity: live ? 1 : 0 }}
               transition={reduceMotion ? { duration: 0 } : BTN_FADE}
-              style={{ pointerEvents: live && allUnlocked ? 'auto' : 'none' }}
-              tabIndex={live && allUnlocked ? undefined : -1}
-              onClick={() => { if (allUnlocked) setToggledReduced((v) => !v) }}
+              style={{ pointerEvents: live ? 'auto' : 'none' }}
+              tabIndex={live ? undefined : -1}
+              onClick={() => {
+                if (live) setToggledReduced({ value: !reduced, beat })
+              }}
             >
               <span className="alluvial-switch__track" aria-hidden="true">
                 <span className="alluvial-switch__thumb" />

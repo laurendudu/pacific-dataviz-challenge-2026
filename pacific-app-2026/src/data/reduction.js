@@ -35,7 +35,8 @@ export const TOTAL_DOTS = Math.round(WORLD_MT / DOT_MT)
 /**
  * Scroll beats inside `#reduction`.
  * Each rule arrives as the live ASR map, then the same map with overshooters
- * clamped to 1. Hold hands both controls to the reader.
+ * clamped to 1. Each rule’s toggle and the fair-share switch are clickable
+ * as soon as they appear; earlier rules stay reachable from then on.
  */
 export const REDUCTION_BEATS = {
   empty: 0,

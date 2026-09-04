@@ -113,6 +113,13 @@ function ScatterView({ beat }) {
     () => countries.map((c) => ({ iso: c.iso, name: c.name })),
     [countries],
   )
+  const prMissingCount = useMemo(
+    () => countries.filter((c) => asrOf(c, 'pr') == null).length,
+    [countries],
+  )
+  const missingNote = prMissingCount > 0
+    ? `${prMissingCount} countries are missing from the prioritarian approach due to missing PPP GDP data.`
+    : null
   const activeIso = pointer?.iso ?? previewIso ?? pinnedIso
   const hovered = pointer
 
@@ -244,6 +251,9 @@ function ScatterView({ beat }) {
             Rest of the world
           </li>
         </ul>
+        {missingNote ? (
+          <p className="scatter__legend-note">* {missingNote}</p>
+        ) : null}
       </div>
 
       <AnimatePresence>

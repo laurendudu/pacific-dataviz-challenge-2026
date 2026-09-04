@@ -235,6 +235,7 @@ function RankingMarks({
   const named = rest.filter((r) => r.group !== 'other')
   const extras = showRow ? [] : others
   const worldGreys = showRow ? others : []
+  const isMissing = (row) => livePr && row.ranks[2] == null
 
   const greyBatches = useMemo(() => {
     const drawn = worldGreys.filter((_, i) => i % 3 === 0)
@@ -369,7 +370,7 @@ function RankingMarks({
               <path
                 key={`eg-${row.iso}`}
                 d={row.dEg}
-                className={`rank__line rank__line--${row.group}${dim ? ' is-dim' : ''}`}
+                className={`rank__line rank__line--${row.group}${dim ? ' is-dim' : ''}${isMissing(row) ? ' is-missing' : ''}`}
               />
             ) : null
           ))}
@@ -378,7 +379,7 @@ function RankingMarks({
               <path
                 key={`pr-${row.iso}`}
                 d={row.dPr}
-                className={`rank__line rank__line--${row.group}${dim ? ' is-dim' : ''}`}
+                className={`rank__line rank__line--${row.group}${dim ? ' is-dim' : ''}${isMissing(row) ? ' is-missing' : ''}`}
               />
             ) : null
           ))}
@@ -387,12 +388,15 @@ function RankingMarks({
               <path
                 key={`ex-${row.iso}`}
                 d={row.dFull}
-                className={`rank__line rank__line--other${dim ? ' is-dim' : ''}`}
+                className={`rank__line rank__line--other${dim ? ' is-dim' : ''}${isMissing(row) ? ' is-missing' : ''}`}
               />
             ) : null
           ))}
           {!volume && hovered?.dFull ? (
-            <path d={hovered.dFull} className={`rank__line rank__line--${hovered.group} is-hover`} />
+            <path
+              d={hovered.dFull}
+              className={`rank__line rank__line--${hovered.group} is-hover${isMissing(hovered) ? ' is-missing' : ''}`}
+            />
           ) : null}
         </motion.g>
 
@@ -404,6 +408,7 @@ function RankingMarks({
             fat={fatByIso.get(row.iso)}
             volume={volume}
             dim={dim}
+            missing={isMissing(row)}
             lastLive={lastLive}
             transition={morph}
           />
@@ -416,13 +421,14 @@ function RankingMarks({
             fat={fatByIso.get(row.iso)}
             volume={volume}
             dim={dim}
+            missing={isMissing(row)}
             lastLive={lastLive}
             transition={morph}
           />
         ))}
 
         {volume && hovered && hoveredFat?.ribbon ? (
-          <g className={`alluvial-flow alluvial-flow--${hovered.group} is-hover`}>
+          <g className={`alluvial-flow alluvial-flow--${hovered.group} is-hover${isMissing(hovered) ? ' is-missing' : ''}`}>
             <path d={hoveredFat.ribbon} />
             {hovered.group !== 'other'
               ? hoveredFat.nodes.map((node, i) => (
@@ -455,7 +461,7 @@ function RankingMarks({
                 cx={x[i]}
                 cy={y(rank)}
                 r={3.2}
-                className={`rank__dot rank__dot--${row.group}${dim ? ' is-dim' : ''}`}
+                className={`rank__dot rank__dot--${row.group}${dim ? ' is-dim' : ''}${isMissing(row) ? ' is-missing' : ''}`}
               />
             ),
           ),
@@ -468,7 +474,7 @@ function RankingMarks({
                   cx={x[i]}
                   cy={y(rank)}
                   r={i === tiedCol ? 5 : 4.2}
-                  className={`rank__dot rank__dot--${hovered.group} is-hover`}
+                  className={`rank__dot rank__dot--${hovered.group} is-hover${isMissing(hovered) ? ' is-missing' : ''}`}
                 />
               ),
             )
@@ -511,11 +517,12 @@ function RankingMarks({
           }
           const row = item.row
           const faded = dim && hoveredIso !== row.iso
+          const missing = isMissing(row)
           const rankMark = formatRank(row.ranks[item.col])
           return (
             <g
               key={`lbl-${row.iso}`}
-              className={`rank__label rank__label--${row.group}${faded ? ' is-dim' : ''}`}
+              className={`rank__label rank__label--${row.group}${faded ? ' is-dim' : ''}${missing ? ' is-missing' : ''}`}
             >
               {lead ? (
                 <path
@@ -524,7 +531,7 @@ function RankingMarks({
                 />
               ) : null}
               <text x={tx} y={ly} dy="0.32em" textAnchor="start">
-                {row.name}
+                {row.name}{missing ? '*' : ''}
                 {rankMark ? (
                   <tspan className="rank__label-n">{`  ${rankMark}`}</tspan>
                 ) : null}
@@ -606,13 +613,13 @@ function RankingMarks({
   )
 }
 
-function MorphRibbon({ group, thin, fat, volume, dim, transition, lastLive = 2 }) {
+function MorphRibbon({ group, thin, fat, volume, dim, missing = false, transition, lastLive = 2 }) {
   const from = thin?.ribbon || ''
   const to = fat?.ribbon || ''
   const d = volume ? (to || from) : (from || to)
   if (!d) return null
   return (
-    <g className={`alluvial-flow alluvial-flow--${group}${dim ? ' is-dim' : ''}`}>
+    <g className={`alluvial-flow alluvial-flow--${group}${dim ? ' is-dim' : ''}${missing ? ' is-missing' : ''}`}>
       <motion.path
         d={d}
         initial={false}
